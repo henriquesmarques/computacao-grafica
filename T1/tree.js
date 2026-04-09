@@ -29,47 +29,47 @@ let axesHelper = new THREE.AxesHelper(12);
 scene.add(axesHelper);
 
 // create the ground plane
-let plane = createGroundPlaneXZ(20, 20);
-scene.add(plane);
+// let plane = createGroundPlaneXZ(20, 20);
+// scene.add(plane);
+
+const materialVerde = setDefaultMaterial("green");
+const materialMarrom = setDefaultMaterial("brown");
+
+const cylinderGeometry = new THREE.CylinderGeometry(1.8, 2, 2, 16);
+const cilindro = new THREE.Mesh(cylinderGeometry, materialMarrom);
+
+const coneGeometry1 = new THREE.ConeGeometry(3, 4, 32);
+const coneGeometry2 = new THREE.ConeGeometry(4, 5, 32);
+const coneGeometry3 = new THREE.ConeGeometry(4.5, 5.5, 32);
+
+const cone1 = new THREE.Mesh(coneGeometry1, materialVerde);
+const cone2 = new THREE.Mesh(coneGeometry2, materialVerde);
+const cone3 = new THREE.Mesh(coneGeometry3, materialVerde);
+
+const alturaCilindro = cilindro.geometry.parameters.height;
+const alturaCone1 = coneGeometry1.parameters.height;
+const alturaCone2 = coneGeometry2.parameters.height;
+const alturaCone3 = coneGeometry3.parameters.height;
+
+cilindro.position.set(0, alturaCilindro / 2, 0);
+
+const posY3 = alturaCilindro / 2 + alturaCone3 / 2;
+cone3.position.set(0, posY3, 0);
+
+const posY2 = posY3 + alturaCone3 / 2;
+cone2.position.set(0, posY2, 0);
+
+const posY1 = posY2 + alturaCone2 / 2;
+cone1.position.set(0, posY1, 0);
+
+cilindro.add(cone1);
+cilindro.add(cone2);
+cilindro.add(cone3);
 
 
 
 
-const height = 3;
-
-const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-let cube = new THREE.Mesh(cubeGeometry, material);
-cube.scale.set(11, 0.3, 6);
-cube.position.set(0.0, height - cube.scale.y / 2, 0.0);
-
-const cylinderGeometry = new THREE.CylinderGeometry(0.2, 0.2, 3, 16);
-
-const offsetLocalX = 0.45;
-const offsetLocalZ = 0.45;
-const localY = -1.5 * height - cube.scale.y;
-const corners = [
-    [-1, -1],
-    [ 1, -1],
-    [-1,  1],
-    [ 1,  1]
-];
-
-corners.forEach(corner => {
-    let cylinder = new THREE.Mesh(cylinderGeometry, material);
-
-    cylinder.scale.set(1/11, 1/0.3, 1/6);
-
-    cylinder.position.set(offsetLocalX * corner[0], localY, offsetLocalZ * corner[1]);
-
-    cube.add(cylinder);
-});
-
-
-
-
-
-// add the cube to the scene
-scene.add(cube);
+scene.add(cilindro);
 
 // Use this to show information onscreen
 let controls = new InfoBox();
