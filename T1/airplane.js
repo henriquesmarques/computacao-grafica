@@ -13,7 +13,6 @@ import {
 let scene, renderer, camera, material, light, orbit; // Initial variables
 scene = new THREE.Scene();    // Create main scene
 renderer = initRenderer();    // Init a basic renderer
-material = setDefaultMaterial(); // create a basic material
 light = initDefaultBasicLight(scene); // Create a basic light to illuminate the scene
 camera = initCamera(new THREE.Vector3(0, 15, 30)); // Init camera in this position
 scene.add(camera); // Add camera to the scene
@@ -28,43 +27,75 @@ window.addEventListener('resize', function () {
 let axesHelper = new THREE.AxesHelper(12);
 scene.add(axesHelper);
 
-// create the ground plane
-let plane = createGroundPlaneXZ(20, 20);
-scene.add(plane);
+
+const materialAzul = setDefaultMaterial("rgb(23,62,125)");
+const materialAmarelo = setDefaultMaterial("rgb(194,140,39)")
+
+// Asa frontal
+const geometriaEsfera = new THREE.SphereGeometry();
+const asa = new THREE.Mesh(geometriaEsfera, materialAzul);
+asa.scale.set(10, 0.5, 1.5);
+asa.position.set(0, 0, 0.5);
+
+// Corpo
+const geometriaCilindro = new THREE.CylinderGeometry(0.9, 0.5, 1, 32, 1, false, Math.PI/6);
+const corpo = new THREE.Mesh(geometriaCilindro, materialAzul);
+corpo.scale.set(2.3, 13, 2);
+corpo.rotation.y = Math.PI;
+corpo.rotation.x = Math.PI / 2;
+
+// Asa traseira
+// Usando SphereGeometry achatada, igual à asa principal, mas menor.
+const geometriaCaudaHoriz = new THREE.SphereGeometry();
+const caudaHorizontal = new THREE.Mesh(geometriaCaudaHoriz, materialAmarelo);
+caudaHorizontal.scale.set(3.5, 0.4, 1);
+caudaHorizontal.position.set(0, 0, -5.5); // Posicionado na parte de trás do cilindro
+scene.add(caudaHorizontal);
+
+// Cauda (Leme)
+// Usando BoxGeometry para fazer uma barbatana direcional.
+const geometriaCaudaVert = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+const caudaVertical = new THREE.Mesh(geometriaCaudaVert, materialAmarelo);
+caudaVertical.scale.set(0.3, 2, 1.9);
+caudaVertical.position.set(0, 1, -5.5); // Acima da asa traseira
+caudaVertical.rotation.x = Math.PI / 8;   // Leve inclinação para trás para dar estilo
+scene.add(caudaVertical);
+
+// Cabine
+// Uma meia-esfera alongada em cima do corpo.
+const geometriaCabine = new THREE.SphereGeometry(0.8);
+const cabine = new THREE.Mesh(geometriaCabine, materialAmarelo);
+cabine.scale.set(1.2, 1.2, 2.5);
+cabine.position.set(0, 1.5, 0.6); // Na parte superior, ligeiramente à frente
+scene.add(cabine);
+
+// Hélice
+// Uma caixa fina e comprida no "nariz" do avião.
+const geometriaHelice = new THREE.BoxGeometry(1, 1, 1);
+const helice = new THREE.Mesh(geometriaHelice, materialAmarelo);
+helice.scale.set(5, 0.4, 0.1);
+helice.position.set(0, 0, 6.6); // Bem na ponta frontal do cilindro
+scene.add(helice);
+
+// Miolo da Hélice
+// Pequeno cone ou esfera no centro da hélice para dar acabamento.
+const geometriaMiolo = new THREE.SphereGeometry();
+const miolo = new THREE.Mesh(geometriaMiolo, materialAzul);
+miolo.scale.set(0.6, 0.6, 0.6);
+miolo.position.set(0, 0, 6.7);
+scene.add(miolo);
+
+// Arco
+const geometriaArco = new THREE.TorusGeometry(1.85, 0.14);
+const arco = new THREE.Mesh(geometriaArco, materialAmarelo);
+arco.scale.set(1.3, 1.3, 0.01);
+arco.position.set(0, 0, 6.6);
 
 
-const height = 3;
+scene.add(corpo);
+scene.add(arco);
+scene.add(asa);
 
-const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-let cube = new THREE.Mesh(cubeGeometry, material);
-cube.scale.set(11, 0.3, 6);
-cube.position.set(0.0, height - cube.scale.y / 2, 0.0);
-
-const cylinderGeometry = new THREE.CylinderGeometry(0.2, 0.2, 3, 16);
-
-const offsetLocalX = 0.45;
-const offsetLocalZ = 0.45;
-const localY = -1.5 * height - cube.scale.y;
-const corners = [
-    [-1, -1],
-    [1, -1],
-    [-1, 1],
-    [1, 1]
-];
-
-corners.forEach(corner => {
-    let cylinder = new THREE.Mesh(cylinderGeometry, material);
-
-    cylinder.scale.set(1 / 11, 1 / 0.3, 1 / 6);
-
-    cylinder.position.set(offsetLocalX * corner[0], localY, offsetLocalZ * corner[1]);
-
-    cube.add(cylinder);
-});
-
-
-// add the cube to the scene
-scene.add(cube);
 
 // Use this to show information onscreen
 let controls = new InfoBox();
