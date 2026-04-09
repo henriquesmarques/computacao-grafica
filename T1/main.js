@@ -5,24 +5,26 @@ import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js'
 import { criarArvore, criarAviao } from "./util.js";
 
+// Variáveis globais
 const scene = new THREE.Scene();
 const renderer = initRenderer();
-initDefaultBasicLight(scene); // Create a basic light to illuminate the scene
-let animationOn = true;
+let animationOn = true; // Controla se a animação está ativa
+let valorFOG = 100;
 
+// Create a basic light to illuminate the scene
+initDefaultBasicLight(scene);
 
 // Câmera
-const camera = initCamera(new THREE.Vector3(0, 15, 30));
+const camera = initCamera(new THREE.Vector3(0, 40, -40));
 scene.add(camera);
 
 // Enable mouse rotation, pan, zoom etc.
 new OrbitControls(camera, renderer.domElement);
 
-// Listen window size changes
+// Percebe mudanças no tamanho da janela
 window.addEventListener('resize', function () { onWindowResize(camera, renderer) }, false);
 
 // Fog (Névoa)
-let valorFOG = 100;
 const baseColor = "rgb(175, 200, 220)"; // a cor do FOG deve ser a mesma do background
 scene.fog = new THREE.Fog(baseColor, 1, valorFOG);
 renderer.setClearColor(baseColor);
@@ -40,10 +42,15 @@ scene.add(plano);
 // Avião
 const eixo = new THREE.AxesHelper(12);
 const aviao = criarAviao();
-aviao.position.set(0, 5, 0);
-
+aviao.position.set(0, 20, -20);
 aviao.add(eixo);
 scene.add(aviao);
+
+// Árvores
+const arvore = criarArvore();
+scene.add(arvore);
+arvore.position.set(10, arvore.geometry.parameters.height/2, 8);
+
 
 
 buildInterface();
@@ -67,7 +74,7 @@ function buildInterface() {
     // Interface
     const gui = new GUI();
     gui.add(controls, 'onChangeAnimation',true).name("Animation On/Off");
-    gui.add(controls, 'fog', 10, 100)
+    gui.add(controls, 'fog', 10, 200)
        .onChange(function(e) { controls.changeFOG() })
        .name("Change FOG");
 }
