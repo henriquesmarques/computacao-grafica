@@ -1,24 +1,21 @@
 import * as THREE from 'three';
 import {OrbitControls} from '../build/jsm/controls/OrbitControls.js';
 import {
+    InfoBox,
     initRenderer,
     initCamera,
     initDefaultBasicLight,
-    setDefaultMaterial,
-    InfoBox,
     onWindowResize,
     createGroundPlaneXZ
 } from "../libs/util/util.js";
 
 import { criarArvore, criarAviao } from "./util.js";
 
-let scene, renderer, camera, material, light, orbit; // Initial variables
+let scene, renderer, camera, light, orbit; // Initial variables
 scene = new THREE.Scene();    // Create main scene
 renderer = initRenderer();    // Init a basic renderer
-material = setDefaultMaterial(); // create a basic material
 light = initDefaultBasicLight(scene); // Create a basic light to illuminate the scene
 camera = initCamera(new THREE.Vector3(0, 15, 30)); // Init camera in this position
-scene.add(camera); // Add camera to the scene
 orbit = new OrbitControls(camera, renderer.domElement); // Enable mouse rotation, pan, zoom etc.
 
 // Listen window size changes
@@ -26,13 +23,26 @@ window.addEventListener('resize', function () {
     onWindowResize(camera, renderer)
 }, false);
 
-// Show axes (parameter is size of each axis)
-let axesHelper = new THREE.AxesHelper(12);
-scene.add(axesHelper);
+// Fog (Névoa)
+const baseColor = "rgb(175, 200, 220)"; // It's important the fog color is the same as the background
+scene.fog = new THREE.Fog(baseColor, 1, 100);
+renderer.setClearColor(baseColor);
 
 
-
+const ground = createGroundPlaneXZ(150, 150);
+const eixo = new THREE.AxesHelper(12);
 const aviao = criarAviao();
+
+
+
+aviao.position.set(0, 5, 0);
+
+
+
+aviao.add(eixo);
+
+scene.add(camera);
+scene.add(ground);
 scene.add(aviao);
 
 

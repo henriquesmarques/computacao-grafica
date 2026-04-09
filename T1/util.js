@@ -45,7 +45,8 @@ export function criarArvore() {
 export function criarAviao() {
     // Materiais
     const materialAzul = setDefaultMaterial("rgb(23,62,125)");
-    const materialAmarelo = setDefaultMaterial("rgb(194,140,39)")
+    const materialAmarelo = setDefaultMaterial("rgb(194,140,39)");
+    const materialCinza = setDefaultMaterial("gray");
 
     // Corpo
     // Usando CylinderGeometry com bases distintas
@@ -100,7 +101,7 @@ export function criarAviao() {
     // Miolo da Hélice
     // Usando SphereGeometry no centro da hélice
     const geometriaMiolo = new THREE.SphereGeometry();
-    const miolo = new THREE.Mesh(geometriaMiolo, materialAzul);
+    const miolo = new THREE.Mesh(geometriaMiolo, materialCinza);
     miolo.scale.set(0.6, 0.6, 0.6);
     miolo.position.set(0, 6.7, 0);
     miolo.rotation.x = -Math.PI / 2;
