@@ -15,13 +15,13 @@ let valorFOG = 100;
 initDefaultBasicLight(scene);
 
 // Câmera
-const camera = initCamera(new THREE.Vector3(0, 40, -40));
+const camera = initCamera(new THREE.Vector3(0, 30, -40));
 scene.add(camera);
 
 // Enable mouse rotation, pan, zoom etc.
 new OrbitControls(camera, renderer.domElement);
 
-// Percebe mudanças no tamanho da janela
+// Escuta mudanças no tamanho da janela
 window.addEventListener('resize', function () { onWindowResize(camera, renderer) }, false);
 
 // Fog (Névoa)
@@ -37,8 +37,6 @@ document.getElementById("webgl-output").appendChild(stats.domElement);
 const plano = createGroundPlaneXZ(150, 150);
 scene.add(plano);
 
-
-
 // Avião
 const eixo = new THREE.AxesHelper(12);
 const aviao = criarAviao();
@@ -51,6 +49,52 @@ const arvore = criarArvore();
 scene.add(arvore);
 arvore.position.set(10, arvore.geometry.parameters.height/2, 8);
 
+
+// ==========================================
+// INTERAÇÃO COM RAYCASTER (SIMPLIFICADO)
+// ==========================================
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// O ponto de destino começa onde o avião está
+const pontoAlvo = new THREE.Vector3(0, 20, -20);
+
+// Criação da nossa "parede invisível" matemática.
+// A normal (0,0,1) diz que a parede está de frente para o eixo Z.
+// O número 20 é a distância inversa, o que significa que ela fica cravada em Z = -20.
+const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 20);
+
+window.addEventListener('mousemove', function(event) {
+    // Normaliza a posição do mouse (de -1 a 1)
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Dispara o laser da câmera passando pelo mouse
+    raycaster.setFromCamera(mouse, camera);
+
+    // Se a animação estiver ligada, descobre onde o laser bateu na parede invisível
+    if (animationOn) {
+        raycaster.ray.intersectPlane(paredeInvisivel, pontoAlvo);
+    }
+}, false);
+
+
+function moverAviao() {
+    if (!animationOn) return;
+
+    // 1. Movimento usando LERP (Interpolação Linear)
+    // O avião se aproxima 5% (0.05) do pontoAlvo a cada frame de forma fluida
+    aviao.position.lerp(pontoAlvo, 0.05);
+
+    // 2. Inclinação Dramática da Asa (Banking)
+    // A inclinação depende do quão longe o alvo X está do avião.
+    // Multiplicamos por -0.06 para transformar a distância em ângulo de inclinação
+    let inclinacaoAlvo = (pontoAlvo.x - aviao.position.x) * -0.06;
+
+    // Aplica a rotação de forma suave no eixo Y
+    aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
+}
+// ==========================================
 
 
 buildInterface();
@@ -75,12 +119,13 @@ function buildInterface() {
     const gui = new GUI();
     gui.add(controls, 'onChangeAnimation',true).name("Animation On/Off");
     gui.add(controls, 'fog', 10, 200)
-       .onChange(function(e) { controls.changeFOG() })
-       .name("Change FOG");
+        .onChange(function(e) { controls.changeFOG() })
+        .name("Change FOG");
 }
 
 function render() {
     requestAnimationFrame(render);
     stats.update();
-    renderer.render(scene, camera) // Render scene
+    moverAviao();
+    renderer.render(scene, camera); // Render scene
 }
