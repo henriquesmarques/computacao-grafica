@@ -11,7 +11,7 @@ const scene = new THREE.Scene();
 const renderer = initRenderer();
 let animationOn = true; // Controla se a animação está ativa
 let valorFOG = 100;
-const velocidade = 0.6;
+const velocidade = 0.6; //velocidade constante
 
 // Create a basic light to illuminate the scene
 initDefaultBasicLight(scene);
@@ -57,16 +57,14 @@ let listaPlanos = [planoA, planoB];
 //Arvores Plano A
 const arvoresA = gerarGrupoArvore(comprimentoPlano, larguraPlano);
 planoA.add(arvoresA);
-//planoA.position.z = 0;
 
 //Arvores Plano B
 const arvoresB = gerarGrupoArvore(comprimentoPlano, larguraPlano);
 planoB.add(arvoresB);
-//planoB.position.z = -comprimentoPlano;
 
 // Criando cubo de mira
 let cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
-//criando cubo com as arestas
+//criando cubo somente com as arestas
 const materialCube = new THREE.MeshBasicMaterial({
     color: 0x00ff00,
     wireframe: true,
@@ -79,8 +77,8 @@ scene.add(cube);
 // Avião
 const aviao = criarAviao();
 //aviao.rotation.set(0, 0, 0);
-aviao.rotation.y = Math.PI;
-aviao.rotation.x = -Math.PI / 2; 
+aviao.rotation.y = Math.PI; //rotaciona em Y se não fica de cabeça para baixo
+aviao.rotation.x = -Math.PI / 2; //rotaciona em X se não fica virado de frente
 aviao.position.set(0, 10, -90);
 scene.add(aviao);
 
@@ -91,8 +89,6 @@ scene.add(aviao);
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// O ponto de destino começa onde o avião está
-const pontoAlvo = new THREE.Vector3(0, 20, -20);
 
 // Criação da nossa "parede invisível" matemática.
 // A normal (0,0,1) diz que a parede está de frente para o eixo Z.
@@ -142,37 +138,28 @@ function moverAviao() {
 }
 // ==========================================
 
-function verificarReciclagem() {
-    listaPlanos.forEach(plano => {
-        // No Z negativo, o plano está "atrás" de você quando o Z dele 
-        // é maior que o Z da câmera. 
-        // Usamos um 'offset' (como 50) para ele não sumir enquanto ainda está na tela.
+//Utilizando efeito de esteira infinita
+function reposicionarPlano() {
+    listaPlanos.forEach(plano => { //percorre os dois planos, A e B
+        // Como estamos viajando para Z negativo, se a posição Z do plano 
+        // for maior que a da câmera ele já saiu da visão traseira.
         if (plano.position.z > camera.position.z + 50) {
-            
-            // O plano pula para o horizonte (Z diminui)
-            // Calculamos o pulo: (quantidade de planos) * (comprimento de cada um)
-            // No seu caso: 2 * 200 = 400
+            //move o plano após o ultimo plano visivel
             plano.position.z -= listaPlanos.length * comprimentoPlano;
-
-            // Chame a função para mudar as árvores de lugar no plano que pulou
-            reposicionarArvoresNoPlano(plano);
-            
-            // Log opcional para você debugar no F12 e ver se está funcionando
-            // console.log("Plano reposicionado para Z:", plano.position.z);
+            // Chame a função para mudar as árvores de lugar no plano que passou
+            reposicionarArvoresPlano(plano);
         }
     });
 }
-function reposicionarArvoresNoPlano(plano) {
-    // Procura o grupo de árvores que você adicionou ao plano
-    plano.children.forEach(child => {
-        if (child.type === 'Group') {
-            child.children.forEach(arvore => {
-                // Sorteia novo X e Z local dentro do plano
+
+function reposicionarArvoresPlano(plano) {
+    // Procura o grupo de árvores que adicionou ao plano
+    plano.children.forEach(filho => {
+        if (filho.type === 'Group') {
+            filho.children.forEach(arvore => {
+                // Valores de X e Z aleatórios para reposicionar as arvores 
                 arvore.position.x = (Math.random() - 0.5) * larguraPlano;
                 arvore.position.z = (Math.random() - 0.5) * comprimentoPlano;
-                
-                // Mantém o corredor central livre
-                if (Math.abs(arvore.position.x) < 20) arvore.position.x += 30;
             });
         }
     });
@@ -207,21 +194,20 @@ function buildInterface() {
 function render() {
     requestAnimationFrame(render);
 if (animationOn) {
-        // 1. O GRUPO TODO AVANÇA NO EIXO Z
-        // Como o fundo da tela é Z negativo, subtraímos a velocidade
+        // Movimento constante em sentido negativo
         aviao.position.z -= velocidade;
         cube.position.z -= velocidade;
         camera.position.z -= velocidade;
 
-        // 2. A PAREDE INVISÍVEL ACOMPANHA
-        // Ela precisa se manter à mesma distância da câmera
+        // Parede precisa se manter à mesma distância da câmera
         paredeInvisivel.constant += velocidade;
 
-        // 3. MOVIMENTAÇÃO DO AVIÃO (X e Y)
+        // Chama a função mover avião
         moverAviao(); 
-        // 4. RECICLAGEM DOS PLANOS
-        verificarReciclagem();
-        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 50);    }
+        // Chama a função para reutilizar os planos
+        reposicionarPlano();
+        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 50);    
+    }
     stats.update();
     moverAviao();
     renderer.render(scene, camera); // Render scene
