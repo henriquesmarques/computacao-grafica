@@ -106,6 +106,11 @@ window.addEventListener('mousemove', function(event) {
     // Se a animação estiver ligada, descobre onde o laser bateu na parede invisível
     if (animationOn) {
         raycaster.ray.intersectPlane(paredeInvisivel, cube.position);
+        //Limitando o movimento do cubo para não ir para baixo do plano
+        if (cube.position.y < 1.0) cube.position.y = 1.0; 
+        if (cube.position.y > 40.0) cube.position.y = 40.0; // Limite superior
+        if (cube.position.x > 70.0) cube.position.x = 70.0; // Limite lateral
+        if (cube.position.x < -70.0) cube.position.x = -70.0;
     }
 }, false);
 
@@ -118,6 +123,8 @@ function moverAviao() {
     aviao.position.x += (cube.position.x - aviao.position.x) * lerpSpeed;
     aviao.position.y += (cube.position.y - aviao.position.y) * lerpSpeed;
 
+    if (aviao.position.y < 1.0) aviao.position.y = 1.0;
+    
     // --- ROTAÇÃO EM Z (ROLL) ---
     // Calculamos a diferença lateral entre o avião e o cubo
     const deltaX = cube.position.x - aviao.position.x;
