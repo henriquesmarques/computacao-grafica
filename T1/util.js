@@ -39,6 +39,11 @@ export function criarArvore() {
     tronco.add(cone2);
     tronco.add(cone3);
 
+    //Alturas variaveis para as arvores
+    const alturaAleatoria = 0.7 + Math.random() * 1.5;
+    tronco.scale.y = alturaAleatoria;
+    tronco.position.y = (alturaCilindro * alturaAleatoria) / 2;
+
     return tronco;
 }
 
@@ -117,4 +122,25 @@ export function criarAviao() {
     corpo.add(arco);
 
     return corpo;
+}
+
+//Criando função para gerar grupos de arvores "infinitas"
+export function gerarGrupoArvore(comprimentoPlano,larguraPlano){
+    const grupo = new THREE.Group();
+    grupo.rotation.x = Math.PI / 2;
+    //laço para criar as arvores
+    for(let i = 0; i < 25; i++){
+        const arvore = criarArvore();
+
+        //Gerando posições aleatorias para colocar as arvores no plano
+        const x = (Math.random() - 0.5) * larguraPlano;
+        const z = (Math.random() - 0.5) * comprimentoPlano;
+
+        //Colocando as arvores no plano
+        if (Math.abs(x) > 20) { 
+            arvore.position.set(x, 0, z); //posição da arvore 
+            grupo.add(arvore); //adicionando arvore no grupo
+        }
+    }
+    return grupo;
 }
