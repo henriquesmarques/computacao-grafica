@@ -11,6 +11,7 @@ const scene = new THREE.Scene();
 const renderer = initRenderer();
 let animationOn = true; // Controla se a animação está ativa
 let valorFOG = 100;
+const velocidade = 0.6;
 
 // Create a basic light to illuminate the scene
 initDefaultBasicLight(scene);
@@ -56,10 +57,12 @@ let listaPlanos = [planoA, planoB];
 //Arvores Plano A
 const arvoresA = gerarGrupoArvore(comprimentoPlano, larguraPlano);
 planoA.add(arvoresA);
+planoA.position.z = 0;
 
 //Arvores Plano B
 const arvoresB = gerarGrupoArvore(comprimentoPlano, larguraPlano);
 planoB.add(arvoresB);
+planoB.position.z = -comprimentoPlano;
 
 // Criando cubo de mira
 let cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
@@ -70,14 +73,15 @@ const materialCube = new THREE.MeshBasicMaterial({
     wireframeLinewidth:1
 });
 let cube = new THREE.Mesh(cubeGeometry, materialCube)
-cube.position.set(10, 10, -100); 
+cube.position.set(0, 10, -65); 
 scene.add(cube);
 
 // Avião
-const eixo = new THREE.AxesHelper(12);
 const aviao = criarAviao();
-aviao.position.set(0, 10, -20);
-aviao.add(eixo);
+//aviao.rotation.set(0, 0, 0);
+aviao.rotation.y = Math.PI;
+aviao.rotation.x = -Math.PI / 2; 
+aviao.position.set(0, 10, -90);
 scene.add(aviao);
 
 
@@ -93,7 +97,7 @@ const pontoAlvo = new THREE.Vector3(0, 20, -20);
 // Criação da nossa "parede invisível" matemática.
 // A normal (0,0,1) diz que a parede está de frente para o eixo Z.
 // O número 20 é a distância inversa, o que significa que ela fica cravada em Z = -20.
-const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 40);
+const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 65);
 
 window.addEventListener('mousemove', function(event) {
     // Normaliza a posição do mouse (de -1 a 1)
@@ -138,6 +142,41 @@ function moverAviao() {
 }
 // ==========================================
 
+function verificarReciclagem() {
+    listaPlanos.forEach(plano => {
+        // No Z negativo, o plano está "atrás" de você quando o Z dele 
+        // é maior que o Z da câmera. 
+        // Usamos um 'offset' (como 50) para ele não sumir enquanto ainda está na tela.
+        if (plano.position.z > camera.position.z + 50) {
+            
+            // O plano pula para o horizonte (Z diminui)
+            // Calculamos o pulo: (quantidade de planos) * (comprimento de cada um)
+            // No seu caso: 2 * 200 = 400
+            plano.position.z -= listaPlanos.length * comprimentoPlano;
+
+            // Chame a função para mudar as árvores de lugar no plano que pulou
+            reposicionarArvoresNoPlano(plano);
+            
+            // Log opcional para você debugar no F12 e ver se está funcionando
+            // console.log("Plano reposicionado para Z:", plano.position.z);
+        }
+    });
+}
+function reposicionarArvoresNoPlano(plano) {
+    // Procura o grupo de árvores que você adicionou ao plano
+    plano.children.forEach(child => {
+        if (child.type === 'Group') {
+            child.children.forEach(arvore => {
+                // Sorteia novo X e Z local dentro do plano
+                arvore.position.x = (Math.random() - 0.5) * larguraPlano;
+                arvore.position.z = (Math.random() - 0.5) * comprimentoPlano;
+                
+                // Mantém o corredor central livre
+                if (Math.abs(arvore.position.x) < 20) arvore.position.x += 30;
+            });
+        }
+    });
+}
 
 buildInterface();
 render();
@@ -167,6 +206,22 @@ function buildInterface() {
 
 function render() {
     requestAnimationFrame(render);
+if (animationOn) {
+        // 1. O GRUPO TODO AVANÇA NO EIXO Z
+        // Como o fundo da tela é Z negativo, subtraímos a velocidade
+        aviao.position.z -= velocidade;
+        cube.position.z -= velocidade;
+        camera.position.z -= velocidade;
+
+        // 2. A PAREDE INVISÍVEL ACOMPANHA
+        // Ela precisa se manter à mesma distância da câmera
+        paredeInvisivel.constant += velocidade;
+
+        // 3. MOVIMENTAÇÃO DO AVIÃO (X e Y)
+        moverAviao(); 
+        // 4. RECICLAGEM DOS PLANOS
+        verificarReciclagem();
+        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 50);    }
     stats.update();
     moverAviao();
     renderer.render(scene, camera); // Render scene
