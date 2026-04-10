@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {OrbitControls} from '../build/jsm/controls/OrbitControls.js';
-import { initRenderer, initCamera, initDefaultBasicLight, onWindowResize, createGroundPlaneWired, setDefaultMaterial } from "../libs/util/util.js";
+import { initRenderer, initCamera, initDefaultBasicLight, onWindowResize, createGroundPlaneWired} from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js'
 import {criarAviao, gerarGrupoArvore } from "./util.js";
@@ -57,12 +57,12 @@ let listaPlanos = [planoA, planoB];
 //Arvores Plano A
 const arvoresA = gerarGrupoArvore(comprimentoPlano, larguraPlano);
 planoA.add(arvoresA);
-planoA.position.z = 0;
+//planoA.position.z = 0;
 
 //Arvores Plano B
 const arvoresB = gerarGrupoArvore(comprimentoPlano, larguraPlano);
 planoB.add(arvoresB);
-planoB.position.z = -comprimentoPlano;
+//planoB.position.z = -comprimentoPlano;
 
 // Criando cubo de mira
 let cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
