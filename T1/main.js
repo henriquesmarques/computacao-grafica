@@ -3,7 +3,7 @@ import {OrbitControls} from '../build/jsm/controls/OrbitControls.js';
 import { initRenderer, initCamera, initDefaultBasicLight, onWindowResize, createGroundPlaneWired} from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js'
-import {criarAviao, gerarGrupoArvore } from "./util.js";
+import {criarAviao, gerarVariasArvores } from "./util.js";
 //import { compute } from 'three/src/nodes/gpgpu/ComputeNode.js';
 
 // Variáveis globais
@@ -13,16 +13,12 @@ let animationOn = true; // Controla se a animação está ativa
 let valorFOG = 100;
 const velocidade = 0.6; //velocidade constante
 
-
 // Create a basic light to illuminate the scene
 initDefaultBasicLight(scene);
 
 // Câmera
 const camera = initCamera(new THREE.Vector3(0, 20, -45));
 scene.add(camera);
-
-// Enable mouse rotation, pan, zoom etc.
-//new OrbitControls(camera, renderer.domElement);
 
 // Escuta mudanças no tamanho da janela
 window.addEventListener('resize', function () { onWindowResize(camera, renderer) }, false);
@@ -37,16 +33,15 @@ const stats = new Stats();
 document.getElementById("webgl-output").appendChild(stats.domElement);
 
 // Criando o plano
-//Variaveis para comprimento e largura
 const comprimentoPlano = 200;
 const larguraPlano = 150;
 
 //Criando dois planos, A e B. 
-//Plano A: Inicio
+//Plano A
 const planoA = createGroundPlaneWired(larguraPlano, comprimentoPlano);
 scene.add(planoA);
 
-//Plano B: Inicia quando o plano A acaba
+//Plano B
 const planoB = createGroundPlaneWired(larguraPlano, comprimentoPlano);
 planoB.position.z = -comprimentoPlano; //inicia B assim que termina A
 scene.add(planoB);
@@ -56,12 +51,12 @@ let listaPlanos = [planoA, planoB];
 
 //Adicionado as arvores nos planos
 //Arvores Plano A
-const arvoresA = gerarGrupoArvore(comprimentoPlano, larguraPlano);
-planoA.add(arvoresA);
+const arvoresA = gerarVariasArvores(comprimentoPlano, larguraPlano);
+planoA.add(...arvoresA); //por se tratar de um vetor, é necessario usar esses ...
 
 //Arvores Plano B
-const arvoresB = gerarGrupoArvore(comprimentoPlano, larguraPlano);
-planoB.add(arvoresB);
+const arvoresB = gerarVariasArvores(comprimentoPlano, larguraPlano);
+planoB.add(...arvoresB);
 
 // Criando cubo de mira
 let cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
@@ -77,20 +72,15 @@ scene.add(cube);
 
 // Avião
 const aviao = criarAviao();
-//aviao.rotation.set(0, 0, 0);
-// aviao.rotation.y =-Math.PI; //rotaciona em Y se não fica de cabeça para baixo
-// aviao.rotation.x = -Math.PI / 2; //rotaciona em X se não fica virado de frente
-aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
-aviao.position.set(0, 10, -90); // Avião em -90 (mais longe)
+// Deita o avião para apontar para frente 
+// e gira para ficar de barriga para baixo 
+aviao.rotation.set(-Math.PI / 2, Math.PI, 0); 
+aviao.position.set(0, 10, -90); // Avião em -90 
 scene.add(aviao);
 
-
-// ==========================================
-// INTERAÇÃO COM RAYCASTER (SIMPLIFICADO)
-// ==========================================
+// INTERAÇÃO COM RAYCASTER 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-
 
 // Criação da nossa "parede invisível" matemática.
 // A normal (0,0,1) diz que a parede está de frente para o eixo Z.
@@ -116,72 +106,60 @@ window.addEventListener('mousemove', function(event) {
     }
 }, false);
 
-
-// function moverAviao() {
-    // Fator de interpolação (0.0 a 1.0). Quanto menor, mais suave.
-    // const lerpSpeed = 0.05; 
-
-    // O avião tenta alcançar a posição X e Y do cubo, mas mantém seu próprio Z
-    // aviao.position.x += (cube.position.x - aviao.position.x) * lerpSpeed;
-    // aviao.position.y += (cube.position.y - aviao.position.y) * lerpSpeed;
-
-    // if (aviao.position.y < 1.0) aviao.position.y = 1.0;
-    
-    // --- ROTAÇÃO EM Z (ROLL) ---
-    // Calculamos a diferença lateral entre o avião e o cubo
-    // const deltaX = cube.position.x - aviao.position.x;
-    
-    // Aplicamos a inclinação baseada nessa distância
-    // aviao.rotation.y = -deltaX * 0.1; 
-
-    // Limitamos a inclinação para não passar de 45 graus (PI/4)
-    //const maxRoll = Math.PI / 4;
-    //aviao.rotation.z = THREE.MathUtils.clamp(aviao.rotation.z, -maxRoll, maxRoll);
-// }
 function moverAviao() {
     if (!animationOn) return;
+
     const pontoAlvo = cube.position;
     aviao.position.x += (pontoAlvo.x - aviao.position.x) * 0.05;
     aviao.position.y += (pontoAlvo.y - aviao.position.y) * 0.05;
-    // Movimento usando LERP
-    //aviao.position.lerp(pontoAlvo, 0.05);
 
     // Inclinação da Asa
     // Multiplicamos por -0.06 para transformar a distância em ângulo de inclinação
-    // Somamos Math.PI para virar o aviâo de cabeça para cima 
+    // Somamos Math.PI para virar o avião de cabeça para cima 
     const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * -0.06;
 
     // Aplica a rotação de forma suave no eixo Y
     aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
 }
-// ==========================================
 
 //Utilizando efeito de esteira infinita
 function reposicionarPlano() {
-    listaPlanos.forEach(plano => { //percorre os dois planos, A e B
+    for (let i = 0; i < listaPlanos.length; i++) {
+        const plano = listaPlanos[i]; // Pega o plano atual da rodada
+        
         // Como estamos viajando para Z negativo, se a posição Z do plano 
         // for maior que a da câmera ele já saiu da visão traseira.
         if (plano.position.z > camera.position.z + 50) {
-            //move o plano após o ultimo plano visivel
+            // Move o plano após o ultimo plano visível
             plano.position.z -= listaPlanos.length * comprimentoPlano;
-            // Chame a função para mudar as árvores de lugar no plano que passou
+            // Chama a função para mudar as árvores de lugar
             reposicionarArvoresPlano(plano);
         }
-    });
+    }
 }
 
 function reposicionarArvoresPlano(plano) {
-    // Procura o grupo de árvores que adicionou ao plano
-    plano.children.forEach(filho => {
-        if (filho.type === 'Group') {
-            filho.children.forEach(arvore => {
-                // Valores de X e Z aleatórios para reposicionar as arvores 
-                arvore.position.x = (Math.random() - 0.5) * larguraPlano;
-                arvore.position.z = (Math.random() - 0.5) * comprimentoPlano;
-            });
-        }
-    });
+    let vetorDeArvores;
+
+    //Verificando qual o plano
+    if (plano === planoA) {
+        vetorDeArvores = arvoresA;
+    } else if (plano === planoB) {
+        vetorDeArvores = arvoresB;
+    }
+    //Percorrendo o vetor de arvores 
+    for (let i = 0; i < vetorDeArvores.length; i++) {
+        const arvore = vetorDeArvores[i]; 
+        
+        //Sorteia novas posições 
+        let x = (Math.random() - 0.5) * larguraPlano;
+        const y = (Math.random() - 0.5) * comprimentoPlano;
+
+        // Atualiza a posição no plano
+        arvore.position.set(x, y, 0); 
+    }
 }
+
 
 buildInterface();
 render();

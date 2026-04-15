@@ -124,23 +124,23 @@ export function criarAviao() {
     return corpo;
 }
 
-//Criando função para gerar grupos de arvores "infinitas"
-export function gerarGrupoArvore(comprimentoPlano,larguraPlano){
-    const grupo = new THREE.Group();
-    grupo.rotation.x = Math.PI / 2;
-    //laço para criar as arvores
-    for(let i = 0; i < 25; i++){
+//Criando função para gerar grupo de arvores 
+export function gerarVariasArvores(comprimentoPlano,larguraPlano){
+   const arvores = []; //Lista para colocar as arvores
+    
+    for(let i = 0; i < 25; i++) {
         const arvore = criarArvore();
 
-        //Gerando posições aleatorias para colocar as arvores no plano
-        const x = (Math.random() - 0.5) * larguraPlano;
-        const z = (Math.random() - 0.5) * comprimentoPlano;
+        //criando posições aleatorias para x e z
+        const x = (Math.random()-0.5) * larguraPlano;
+        const y = (Math.random()-0.5) * comprimentoPlano;
 
-        //Colocando as arvores no plano
         if (Math.abs(x) > 20) { 
-            arvore.position.set(x, 0, z); //posição da arvore 
-            grupo.add(arvore); //adicionando arvore no grupo
+            arvore.position.set(x, y, 0);
+            // Aplica a rotação na árvore 
+            arvore.rotation.x = Math.PI / 2; 
+            arvores.push(arvore); // Adiciona na lista
         }
     }
-    return grupo;
+    return arvores;
 }
