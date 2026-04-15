@@ -13,6 +13,7 @@ let animationOn = true; // Controla se a animação está ativa
 let valorFOG = 100;
 const velocidade = 0.6; //velocidade constante
 
+
 // Create a basic light to illuminate the scene
 initDefaultBasicLight(scene);
 
@@ -21,7 +22,7 @@ const camera = initCamera(new THREE.Vector3(0, 20, -45));
 scene.add(camera);
 
 // Enable mouse rotation, pan, zoom etc.
-new OrbitControls(camera, renderer.domElement);
+//new OrbitControls(camera, renderer.domElement);
 
 // Escuta mudanças no tamanho da janela
 window.addEventListener('resize', function () { onWindowResize(camera, renderer) }, false);
@@ -77,9 +78,10 @@ scene.add(cube);
 // Avião
 const aviao = criarAviao();
 //aviao.rotation.set(0, 0, 0);
-aviao.rotation.y = Math.PI; //rotaciona em Y se não fica de cabeça para baixo
-aviao.rotation.x = -Math.PI / 2; //rotaciona em X se não fica virado de frente
-aviao.position.set(0, 10, -90);
+// aviao.rotation.y =-Math.PI; //rotaciona em Y se não fica de cabeça para baixo
+// aviao.rotation.x = -Math.PI / 2; //rotaciona em X se não fica virado de frente
+aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
+aviao.position.set(0, 10, -90); // Avião em -90 (mais longe)
 scene.add(aviao);
 
 
@@ -115,26 +117,42 @@ window.addEventListener('mousemove', function(event) {
 }, false);
 
 
-function moverAviao() {
+// function moverAviao() {
     // Fator de interpolação (0.0 a 1.0). Quanto menor, mais suave.
-    const lerpSpeed = 0.05; 
+    // const lerpSpeed = 0.05; 
 
     // O avião tenta alcançar a posição X e Y do cubo, mas mantém seu próprio Z
-    aviao.position.x += (cube.position.x - aviao.position.x) * lerpSpeed;
-    aviao.position.y += (cube.position.y - aviao.position.y) * lerpSpeed;
+    // aviao.position.x += (cube.position.x - aviao.position.x) * lerpSpeed;
+    // aviao.position.y += (cube.position.y - aviao.position.y) * lerpSpeed;
 
-    if (aviao.position.y < 1.0) aviao.position.y = 1.0;
+    // if (aviao.position.y < 1.0) aviao.position.y = 1.0;
     
     // --- ROTAÇÃO EM Z (ROLL) ---
     // Calculamos a diferença lateral entre o avião e o cubo
-    const deltaX = cube.position.x - aviao.position.x;
+    // const deltaX = cube.position.x - aviao.position.x;
     
     // Aplicamos a inclinação baseada nessa distância
-    aviao.rotation.z = -deltaX * 0.1; 
+    // aviao.rotation.y = -deltaX * 0.1; 
 
     // Limitamos a inclinação para não passar de 45 graus (PI/4)
-    const maxRoll = Math.PI / 4;
-    aviao.rotation.z = THREE.MathUtils.clamp(aviao.rotation.z, -maxRoll, maxRoll);
+    //const maxRoll = Math.PI / 4;
+    //aviao.rotation.z = THREE.MathUtils.clamp(aviao.rotation.z, -maxRoll, maxRoll);
+// }
+function moverAviao() {
+    if (!animationOn) return;
+    const pontoAlvo = cube.position;
+    aviao.position.x += (pontoAlvo.x - aviao.position.x) * 0.05;
+    aviao.position.y += (pontoAlvo.y - aviao.position.y) * 0.05;
+    // Movimento usando LERP
+    //aviao.position.lerp(pontoAlvo, 0.05);
+
+    // Inclinação da Asa
+    // Multiplicamos por -0.06 para transformar a distância em ângulo de inclinação
+    // Somamos Math.PI para virar o aviâo de cabeça para cima 
+    const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * -0.06;
+
+    // Aplica a rotação de forma suave no eixo Y
+    aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
 }
 // ==========================================
 
