@@ -129,7 +129,8 @@ function reposicionarPlano() {
         
         // Como estamos viajando para Z negativo, se a posição Z do plano 
         // for maior que a da câmera ele já saiu da visão traseira.
-        if (plano.position.z > camera.position.z + 50) {
+        //somamos 60 para o plano não ir para frente e estar no campo de visão do usuario
+        if (plano.position.z > camera.position.z + 60) {
             // Move o plano após o ultimo plano visível
             plano.position.z -= listaPlanos.length * comprimentoPlano;
             // Chama a função para mudar as árvores de lugar
