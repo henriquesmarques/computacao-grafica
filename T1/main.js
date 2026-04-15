@@ -49,23 +49,18 @@ const arvore = criarArvore();
 scene.add(arvore);
 arvore.position.set(10, arvore.geometry.parameters.height/2, 8);
 
-
-// ==========================================
-// INTERAÇÃO COM RAYCASTER (SIMPLIFICADO)
-// ==========================================
+// Interação com Raycaster
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 // O ponto de destino começa onde o avião está
 const pontoAlvo = new THREE.Vector3(0, 20, -20);
 
-// Criação da nossa "parede invisível" matemática.
-// A normal (0,0,1) diz que a parede está de frente para o eixo Z.
-// O número 20 é a distância inversa, o que significa que ela fica cravada em Z = -20.
+// Criação da "parede invisível" para rastreio do ponteiro mouse
 const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 20);
 
 window.addEventListener('mousemove', function(event) {
-    // Normaliza a posição do mouse (de -1 a 1)
+    // Normaliza a posição do mouse
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -79,26 +74,25 @@ window.addEventListener('mousemove', function(event) {
 }, false);
 
 
-function moverAviao() {
-    if (!animationOn) return;
 
-    // 1. Movimento usando LERP (Interpolação Linear)
-    // O avião se aproxima 5% (0.05) do pontoAlvo a cada frame de forma fluida
-    aviao.position.lerp(pontoAlvo, 0.05);
-
-    // 2. Inclinação Dramática da Asa (Banking)
-    // A inclinação depende do quão longe o alvo X está do avião.
-    // Multiplicamos por -0.06 para transformar a distância em ângulo de inclinação
-    let inclinacaoAlvo = (pontoAlvo.x - aviao.position.x) * -0.06;
-
-    // Aplica a rotação de forma suave no eixo Y
-    aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
-}
-// ==========================================
 
 
 buildInterface();
 render();
+
+function moverAviao() {
+    if (!animationOn) return;
+
+    // Movimento usando LERP
+    aviao.position.lerp(pontoAlvo, 0.05);
+
+    // Inclinação da Asa
+    // Multiplicamos por -0.06 para transformar a distância em ângulo de inclinação
+    const inclinacaoAlvo = (pontoAlvo.x - aviao.position.x) * -0.06;
+
+    // Aplica a rotação de forma suave no eixo Y
+    aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
+}
 
 function buildInterface() {
     // Controles
