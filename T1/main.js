@@ -244,4 +244,4 @@ function reposicionarArvoresPlano(plano) {
         // Aplica na árvore
         arvore.position.set(x, y, 0); 
 }
-
+}
