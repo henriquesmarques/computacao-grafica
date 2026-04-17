@@ -12,6 +12,7 @@ const renderer = initRenderer();
 let animationOn = true; // Controla se a animação está ativa
 let valorFOG = 100;
 const velocidade = 0.6; //velocidade constante
+const alvoLerp = new THREE.Vector3();
 
 // Create a basic light to illuminate the scene
 initDefaultBasicLight(scene);
@@ -108,10 +109,12 @@ window.addEventListener('mousemove', function(event) {
 
 function moverAviao() {
     if (!animationOn) return;
-
     const pontoAlvo = cube.position;
-    aviao.position.x += (pontoAlvo.x - aviao.position.x) * 0.05;
-    aviao.position.y += (pontoAlvo.y - aviao.position.y) * 0.05;
+    //Pega X e Y da mira, mas mantém o Z do avião
+    alvoLerp.set(pontoAlvo.x, pontoAlvo.y, aviao.position.z);
+    // aviao.position.x += (pontoAlvo.x - aviao.position.x) * 0.05;
+    // aviao.position.y += (pontoAlvo.y - aviao.position.y) * 0.05;
+    aviao.position.lerp(alvoLerp, 0.05);
 
     // Inclinação da Asa
     // Multiplicamos por -0.06 para transformar a distância em ângulo de inclinação
