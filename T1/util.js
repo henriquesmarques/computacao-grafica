@@ -39,6 +39,11 @@ export function criarArvore() {
     tronco.add(cone2);
     tronco.add(cone3);
 
+    //Alturas variaveis para as arvores
+    const alturaAleatoria = 0.7 + Math.random() * 1.5;
+    tronco.scale.y = alturaAleatoria;
+    tronco.position.y = (alturaCilindro * alturaAleatoria) / 2;
+
     return tronco;
 }
 
@@ -46,7 +51,7 @@ export function criarAviao() {
     // Materiais
     const materialAzul = setDefaultMaterial("rgb(23,62,125)");
     const materialAmarelo = setDefaultMaterial("rgb(194,140,39)");
-    const materialCinza = setDefaultMaterial("gray");
+    const materialVermelho = setDefaultMaterial("rgba(180, 30, 60, 1)");
 
     // Corpo
     // Usando CylinderGeometry com bases distintas
@@ -65,7 +70,7 @@ export function criarAviao() {
     // Asa traseira
     // Usando SphereGeometry achatada, igual à asa principal
     const geometriaCaudaHoriz = new THREE.SphereGeometry();
-    const caudaHorizontal = new THREE.Mesh(geometriaCaudaHoriz, materialAmarelo);
+    const caudaHorizontal = new THREE.Mesh(geometriaCaudaHoriz, materialVermelho);
     caudaHorizontal.scale.set(3.5, 0.4, 1);
     caudaHorizontal.position.set(0, -5.5, 0);
     caudaHorizontal.rotation.x = -Math.PI / 2;
@@ -92,7 +97,7 @@ export function criarAviao() {
     // Hélice
     // Usando BoxGeometry na parte frontal do avião
     const geometriaHelice = new THREE.BoxGeometry(1, 1, 1);
-    const helice = new THREE.Mesh(geometriaHelice, materialAmarelo);
+    const helice = new THREE.Mesh(geometriaHelice, materialVermelho);
     helice.scale.set(5, 0.4, 0.1);
     helice.position.set(0, 6.6, 0);
     helice.rotation.x = -Math.PI / 2;
@@ -101,7 +106,7 @@ export function criarAviao() {
     // Miolo da Hélice
     // Usando SphereGeometry no centro da hélice
     const geometriaMiolo = new THREE.SphereGeometry();
-    const miolo = new THREE.Mesh(geometriaMiolo, materialCinza);
+    const miolo = new THREE.Mesh(geometriaMiolo, materialAmarelo);
     miolo.scale.set(0.6, 0.6, 0.6);
     miolo.position.set(0, 6.7, 0);
     miolo.rotation.x = -Math.PI / 2;
@@ -110,11 +115,32 @@ export function criarAviao() {
     // Arco
     // Usando TorusGeometry para dar sensação de movimento na hélice
     const geometriaArco = new THREE.TorusGeometry(1.85, 0.14);
-    const arco = new THREE.Mesh(geometriaArco, materialAmarelo);
+    const arco = new THREE.Mesh(geometriaArco, materialVermelho);
     arco.scale.set(1.3, 1.3, 0.01);
     arco.position.set(0, 6.6, 0);
     arco.rotation.x = -Math.PI / 2;
     corpo.add(arco);
 
     return corpo;
+}
+
+//Criando função para gerar grupo de arvores 
+export function gerarVariasArvores(comprimentoPlano,larguraPlano){
+   const arvores = []; //Lista para colocar as arvores
+    
+    for(let i = 0; i < 25; i++) {
+        const arvore = criarArvore();
+
+        //criando posições aleatorias para x e z
+        const x = (Math.random()-0.5) * larguraPlano;
+        const y = (Math.random()-0.5) * comprimentoPlano;
+
+        if (Math.abs(x) > 20) { 
+            arvore.position.set(x, y, 0);
+            // Aplica a rotação na árvore 
+            arvore.rotation.x = Math.PI / 2; 
+            arvores.push(arvore); // Adiciona na lista
+        }
+    }
+    return arvores;
 }
