@@ -14,7 +14,7 @@ import {criarAviao, gerarVariasArvores} from "./util.js";
 const scene = new THREE.Scene();
 const renderer = initRenderer();
 let animationOn = true; // Controla se a animação está ativa
-let valorFOG = 100;
+let valorFOG = 125;
 const velocidade = 0.6; // Velocidade constante
 const alvoLerp = new THREE.Vector3();
 
@@ -39,7 +39,7 @@ renderer.setClearColor(baseColor);
 const stats = new Stats();
 document.getElementById("webgl-output").appendChild(stats.domElement);
 
-// PLANO
+// PLANOS
 const comprimentoPlano = 200;
 const larguraPlano = 400;
 
@@ -64,16 +64,16 @@ const arvoresB = gerarVariasArvores(comprimentoPlano, larguraPlano);
 planoB.add(...arvoresB);
 
 // CUBO DE MIRA
-const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+const cubeGeometry = new THREE.BoxGeometry(5, 5, 5);
 // Criando material do cubo somente com as arestas
 const materialCube = new THREE.MeshBasicMaterial({
     color: 0x00ff00,
     wireframe: true,
     wireframeLinewidth: 1
 });
-const cube = new THREE.Mesh(cubeGeometry, materialCube)
-cube.position.set(0, 10, -65);
-scene.add(cube);
+const mira = new THREE.Mesh(cubeGeometry, materialCube)
+mira.position.set(0, 10, -65);
+scene.add(mira);
 
 // AVIÃO
 const aviao = criarAviao();
@@ -87,27 +87,13 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 // Criação da "parede invisível"
-// O número 20 é a distância inversa, o que significa que ela fica cravada em Z = -65.
+// O segundo parâmetro é a distância inversa, o que significa que ela fica cravada em Z = -65.
 const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 65);
 
 window.addEventListener('mousemove', function (event) {
     // Normaliza a posição do mouse (de -1 a 1)
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    // Dispara o laser da câmera passando pelo mouse
-    raycaster.setFromCamera(mouse, camera);
-
-    // Se a animação estiver ligada, descobre onde o laser bateu na parede invisível
-    if (animationOn) {
-        raycaster.ray.intersectPlane(paredeInvisivel, cube.position);
-
-        // Limitando o movimento do cubo para não ir para baixo do plano
-        if (cube.position.y < 1.0) cube.position.y = 1.0;
-        if (cube.position.y > 40.0) cube.position.y = 40.0; // Limite superior
-        if (cube.position.x > 70.0) cube.position.x = 70.0; // Limite lateral
-        if (cube.position.x < -70.0) cube.position.x = -70.0;
-    }
 }, false);
 
 buildInterface();
@@ -132,8 +118,8 @@ function buildInterface() {
     // Interface
     const gui = new GUI();
     gui.add(controls, 'onChangeAnimation', true).name("Animation On/Off");
-    gui.add(controls, 'fog', 10, 200)
-        .onChange(function (e) {
+    gui.add(controls, 'fog', 50, 200)
+        .onChange(function () {
             controls.changeFOG()
         })
         .name("Change FOG");
@@ -142,21 +128,31 @@ function buildInterface() {
 function render() {
     requestAnimationFrame(render);
     if (animationOn) {
-        // Movimento constante em sentido negativo
+        // Atualiza a posição da mira baseada no mouse
+        raycaster.setFromCamera(mouse, camera);
+        raycaster.ray.intersectPlane(paredeInvisivel, mira.position);
+
+        // Limitando o movimento do cubo para não ir para baixo do plano
+        if (mira.position.y < 7.0) mira.position.y = 7.0;
+        if (mira.position.y > 40.0) mira.position.y = 40.0; // Limite superior
+        if (mira.position.x > 70.0) mira.position.x = 70.0; // Limite lateral
+        if (mira.position.x < -70.0) mira.position.x = -70.0;
+
+        // Movimento em Z constante e em sentido negativo
         aviao.position.z -= velocidade;
-        cube.position.z -= velocidade;
+        mira.position.z -= velocidade;
         camera.position.z -= velocidade;
+        camera.position.x = aviao.position.x;
+        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 50);
 
         // Parede precisa se manter à mesma distância da câmera
-        paredeInvisivel.constant += velocidade;
+        paredeInvisivel.constant = -camera.position.z + 65;
 
         // Chama a função mover avião
         moverAviao();
 
         // Chama a função para reutilizar os planos
         reposicionarPlano();
-
-        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 50);
     }
     stats.update();
     moverAviao();
@@ -166,15 +162,15 @@ function render() {
 function moverAviao() {
     if (!animationOn) return;
 
-    const pontoAlvo = cube.position;
+    const pontoAlvo = mira.position;
 
     // Pega X e Y da mira, mas mantém o Z do avião
     alvoLerp.set(pontoAlvo.x, pontoAlvo.y, aviao.position.z);
-    aviao.position.lerp(alvoLerp, 0.05);
+    aviao.position.lerp(alvoLerp, 0.02);
 
     // Inclinação da Asa
     // Somamos Math.PI para virar o avião de cabeça para cima
-    const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * 0.06;
+    const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * 0.03;
 
     // Aplica a rotação de forma suave no eixo Y
     aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
