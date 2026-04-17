@@ -35,7 +35,7 @@ document.getElementById("webgl-output").appendChild(stats.domElement);
 
 // Criando o plano
 const comprimentoPlano = 200;
-const larguraPlano = 150;
+const larguraPlano = 400;
 
 //Criando dois planos, A e B. 
 //Plano A
@@ -117,9 +117,8 @@ function moverAviao() {
     aviao.position.lerp(alvoLerp, 0.05);
 
     // Inclinação da Asa
-    // Multiplicamos por -0.06 para transformar a distância em ângulo de inclinação
     // Somamos Math.PI para virar o avião de cabeça para cima 
-    const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * -0.06;
+    const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * 0.06;
 
     // Aplica a rotação de forma suave no eixo Y
     aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
@@ -132,7 +131,7 @@ function reposicionarPlano() {
         
         // Como estamos viajando para Z negativo, se a posição Z do plano 
         // for maior que a da câmera ele já saiu da visão traseira.
-        //somamos 60 para o plano não ir para frente e estar no campo de visão do usuario
+        // somamos 60 para o plano não ir para frente e estar no campo de visão do usuario
         if (plano.position.z > camera.position.z + 60) {
             // Move o plano após o ultimo plano visível
             plano.position.z -= listaPlanos.length * comprimentoPlano;
