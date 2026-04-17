@@ -242,7 +242,6 @@ function reposicionarArvoresPlano(plano) {
         posicoesAprovadas.push({ x: x, y: y });
         
         // Aplica na árvore
-        arvore.position.set(x, y, 0); // Ajuste o Y/Z dependendo de como seu plano está rotacionado
-    }
+        arvore.position.set(x, y, 0); 
 }
 
