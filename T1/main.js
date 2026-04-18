@@ -224,7 +224,7 @@ function reposicionarArvoresPlano(plano) {
             for (let j = 0; j < posicoesAprovadas.length; j++) {
                 const arvoreAceita = posicoesAprovadas[j];
                 
-                // Calcula a distância usando Pitágoras (A² + B² = C²)
+                // Calcula a distância usando Pitágoras 
                 const distanciaX = x - arvoreAceita.x;
                 const distanciaY = y - arvoreAceita.y;
                 const distanciaReal = Math.sqrt((distanciaX * distanciaX) + (distanciaY * distanciaY));
