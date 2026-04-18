@@ -240,8 +240,8 @@ function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
         }
 
         posicoesAprovadas.push({ x: x, y: y });
-
-        // mantém outras propriedades da árvore (rotations, scale) e apenas altera posição
-        arvore.position.set(x, y, 0);
-    }
+        
+        // Aplica na árvore
+        arvore.position.set(x, y, 0); 
+}
 }
