@@ -196,22 +196,53 @@ function reposicionarPlano() {
 function reposicionarArvoresPlano(plano) {
     let vetorDeArvores;
 
-    // Verificando qual o plano
-    if (plano === planoA) {
+    //Verificando qual o plano
+    if (plano === planoA) 
         vetorDeArvores = arvoresA;
-    } else if (plano === planoB) {
+    else if (plano === planoB) 
         vetorDeArvores = arvoresB;
-    }
+    
+    const posicoesAprovadas = []; 
+    const distanciaMinima = 10.0; // Distância mínima que você quer entre as árvores
 
-    // Percorrendo o vetor de árvores
+    //Percorre o vetor de arvores para reposiciona-las
     for (let i = 0; i < vetorDeArvores.length; i++) {
-        const arvore = vetorDeArvores[i];
+        const arvore = vetorDeArvores[i]; 
+        
+        let x, y;
+        let posicaoAceita= true;
+        let tentativas = 0; // Trava de tentativas para nova posição
 
-        // Sorteia novas posições
-        let x = (Math.random() - 0.5) * larguraPlano;
-        const y = (Math.random() - 0.5) * comprimentoPlano;
+        // Sorteia a nova posição se estiver próximo de um arvore
+        while (posicaoAceita && tentativas < 25) {
+            x = (Math.random() - 0.5) * larguraPlano;
+            y = (Math.random() - 0.5) * comprimentoPlano - 100 ;
+            
+            posicaoAceita = false; // Assume que a posição é boa
 
-        // Atualiza a posição no plano
-        arvore.position.set(x, y, 0);
-    }
+            // Compara com as arvores ja aceitas com a atual
+            for (let j = 0; j < posicoesAprovadas.length; j++) {
+                const arvoreAceita = posicoesAprovadas[j];
+                
+                // Calcula a distância usando Pitágoras (A² + B² = C²)
+                const distanciaX = x - arvoreAceita.x;
+                const distanciaY = y - arvoreAceita.y;
+                const distanciaReal = Math.sqrt((distanciaX * distanciaX) + (distanciaY * distanciaY));
+
+                // Se a distância for menor que o limite é invalida
+                if (distanciaReal < distanciaMinima) {
+                    posicaoAceita = true;
+                    break; //interrompe a comparação e sorteia nova posição
+                }
+            }
+            tentativas++;
+        }
+
+        // Salva a posição da arvore aceita
+        posicoesAprovadas.push({ x: x, y: y });
+        
+        // Aplica na árvore
+        arvore.position.set(x, y, 0); 
 }
+}
+
