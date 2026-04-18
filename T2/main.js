@@ -17,6 +17,7 @@ let valorNevoa = 200;
 let velocidadeDeslocamento = 0.6; // Começa na velocidade 1
 const vetorInterpolacao = new THREE.Vector3();
 const relogio = new THREE.Clock();
+let limiteXDinamico = 45; // Valor padrão inicial
 
 // VARIÁVEIS DA COLISÃO
 const bbAviao = new THREE.Box3();
@@ -119,6 +120,8 @@ window.addEventListener('keydown', function(event) {
     }
 }, false);
 
+//Responsividade da janela
+
 // CONFIGURAÇÕES DO TERRENO
 const comprimentoTerreno = 300;
 const larguraTerreno = 450;
@@ -127,6 +130,7 @@ const geometriaPlano = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerren
 const materialPlano = new THREE.MeshLambertMaterial({color: "darkgreen"});
 const planoTerreno = new THREE.Mesh(geometriaPlano, materialPlano);
 planoTerreno.rotation.x = -Math.PI / 2;
+planoTerreno.receiveShadow = true; //permitir sombra no terreno
 scene.add(planoTerreno);
 
 // ÁRVORES
@@ -135,6 +139,16 @@ const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidade
 
 listaArvores.forEach(arvore => {
     arvore.scale.set(0.4, 0.4, 0.4);
+
+    //Iluminação
+    //Ativa a sombra na arvore
+    arvore.traverse(child => {
+        if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+        }
+    });
+
     scene.add(arvore);
     arvore.position.x = (Math.random() - 0.5) * larguraTerreno;
     arvore.position.z = camera.position.z - Math.random() * comprimentoTerreno;
@@ -143,6 +157,8 @@ listaArvores.forEach(arvore => {
 
 // ILUMINAÇÃO
 initDefaultBasicLight(scene);
+//Criando iluminação direcional
+let luzDirecional;
 
 // INIMIGOS
 criarInimigos(2);
@@ -183,6 +199,46 @@ function retomarSimulacao() {
     cuboMira.visible = true;
 }
 
+//Iluminação
+function gerenciarIluminacao(){
+    // 1. Criar as luzes apenas na primeira execução (quando forem undefined)
+    if (!luzDirecional) {
+        luzDirecional = new THREE.DirectionalLight(0xffffff, 1.2);
+        luzDirecional.castShadow = true; // Exigência do trabalho
+
+        // Resolução equilibrada (Qualidade vs Desempenho)
+        luzDirecional.shadow.mapSize.width = 2048;
+        luzDirecional.shadow.mapSize.height = 2048;
+        
+        // Evita artefatos e sombras "piscando" na tela
+        luzDirecional.shadow.bias = -0.0005; 
+
+        scene.add(luzDirecional);
+        scene.add(luzDirecional.target);
+    }
+
+    // 2. Atualização contínua de posição (Executada a cada frame dentro do renderizar)
+    // Posiciona a luz em X e Y positivo em relação à câmera para projetar à esquerda
+    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 20);
+    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
+
+    // Volume adaptativo em relação ao fog
+    const distanciaFog = scene.fog ? scene.fog.far : 200; 
+    
+    luzDirecional.shadow.camera.near = 0.5;
+    luzDirecional.shadow.camera.far = distanciaFog; 
+    
+    // Proporção da caixa de sombra para cobrir o campo de visão visível
+    const d = distanciaFog * 0.4; 
+    luzDirecional.shadow.camera.left = -d;
+    luzDirecional.shadow.camera.right = d;
+    luzDirecional.shadow.camera.top = d;
+    luzDirecional.shadow.camera.bottom = -d;
+
+    // Força o Three.js a aplicar as mudanças de volume neste frame
+    luzDirecional.shadow.camera.updateProjectionMatrix();
+}
+
 function renderizar() {
     requestAnimationFrame(renderizar);
     const deltaTime = relogio.getDelta();
@@ -197,6 +253,9 @@ function renderizar() {
         atualizarTerreno();
         reposicionarArvores();
         atualizarInimigos();
+
+        //Iluminação
+        gerenciarIluminacao();
 
         // Sistema de Combate
         gerenciarDisparos(deltaTime);
@@ -214,8 +273,8 @@ function atualizarMira() {
     // Limitação espacial da mira na tela
     if (cuboMira.position.y < 10) cuboMira.position.y = 10;
     if (cuboMira.position.y > 40) cuboMira.position.y = 40;
-    if (cuboMira.position.x > 45) cuboMira.position.x = 45;
-    if (cuboMira.position.x < -45) cuboMira.position.x = -45;
+    if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = 45;
+    if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -45;
 }
 
 function atualizarCamera() {
@@ -384,6 +443,7 @@ function reposicionarArvores() {
         }
     }
 }
+
 
 // INIMIGOS
 function criarInimigos(quantidade) {

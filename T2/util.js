@@ -19,6 +19,13 @@ export function criarArvore() {
     const cone2 = new THREE.Mesh(coneGeometry2, materialVerde);
     const cone3 = new THREE.Mesh(coneGeometry3, materialVerde);
 
+    cone1.castShadow = false;
+    cone1.receiveShadow = false;
+    cone2.castShadow = false;
+    cone2.receiveShadow = false;
+    cone3.castShadow = false;
+    cone3.receiveShadow = false;
+
     const alturaCilindro = tronco.geometry.parameters.height;
     const alturaCone2 = coneGeometry2.parameters.height;
     const alturaCone3 = coneGeometry3.parameters.height;
