@@ -201,24 +201,25 @@ function retomarSimulacao() {
 
 //Iluminação
 function gerenciarIluminacao(){
-    // 1. Criar as luzes apenas na primeira execução (quando forem undefined)
+    // Cria as luzes apenas na primeira execução
     if (!luzDirecional) {
         luzDirecional = new THREE.DirectionalLight(0xffffff, 1.2);
         luzDirecional.castShadow = true; // Exigência do trabalho
 
-        // Resolução equilibrada (Qualidade vs Desempenho)
+        // Resolução equilibrada 
         luzDirecional.shadow.mapSize.width = 2048;
         luzDirecional.shadow.mapSize.height = 2048;
         
-        // Evita artefatos e sombras "piscando" na tela
+        // Evita artefatos e sombras piscando
         luzDirecional.shadow.bias = -0.0005; 
 
+        //Adiciona na cena
         scene.add(luzDirecional);
         scene.add(luzDirecional.target);
     }
 
-    // 2. Atualização contínua de posição (Executada a cada frame dentro do renderizar)
-    // Posiciona a luz em X e Y positivo em relação à câmera para projetar à esquerda
+    // Atualização contínua de posição
+    // Posiciona a luz em X e Y positivo em relação à câmera para projetar na esquerda
     luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 20);
     luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
 
@@ -228,14 +229,13 @@ function gerenciarIluminacao(){
     luzDirecional.shadow.camera.near = 0.5;
     luzDirecional.shadow.camera.far = distanciaFog; 
     
-    // Proporção da caixa de sombra para cobrir o campo de visão visível
+    // Proporção para cobrir o campo de visão visível
     const d = distanciaFog * 0.4; 
     luzDirecional.shadow.camera.left = -d;
     luzDirecional.shadow.camera.right = d;
     luzDirecional.shadow.camera.top = d;
     luzDirecional.shadow.camera.bottom = -d;
 
-    // Força o Three.js a aplicar as mudanças de volume neste frame
     luzDirecional.shadow.camera.updateProjectionMatrix();
 }
 
