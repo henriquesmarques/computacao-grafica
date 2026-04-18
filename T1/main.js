@@ -40,7 +40,7 @@ const stats = new Stats();
 document.getElementById("webgl-output").appendChild(stats.domElement);
 
 // PLANOS
-const comprimentoPlano = 200;
+const comprimentoPlano = 250;
 const larguraPlano = 400;
 
 // Plano A
