@@ -132,6 +132,10 @@ export function criarArvores(comprimentoPlano, larguraPlano, total) {
     const arvores = []; // Lista para colocar as árvores
 
     for (let i = 0; i < total; i++) {
+export function gerarVariasArvores(comprimentoPlano, larguraPlano) {
+    const arvores = []; // Lista para colocar as árvores
+
+    for (let i = 0; i < 25; i++) {
         const arvore = criarArvore();
 
         // Criando posições aleatórias para x e z

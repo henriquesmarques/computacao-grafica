@@ -120,8 +120,6 @@ window.addEventListener('keydown', function(event) {
     }
 }, false);
 
-//Responsividade da janela
-
 // CONFIGURAÇÕES DO TERRENO
 const comprimentoTerreno = 300;
 const larguraTerreno = 450;

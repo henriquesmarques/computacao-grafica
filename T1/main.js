@@ -9,6 +9,7 @@ import {
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js'
 import {criarAviao, criarArvores, iniciarCamera} from "./util.js";
+import { criarAviao, gerarVariasArvores } from "./util.js";
 
 // VARIÁVEIS GLOBAIS
 const scene = new THREE.Scene();
@@ -220,6 +221,38 @@ function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
             y = (Math.random() - 0.5) * comprimentoPlano - 100;
 
             ehValido = true; // assumimos válida até provar o contrário
+    // Verificando qual o plano
+    if (plano === planoA)
+        vetorDeArvores = arvoresA;
+    else if (plano === planoB)
+        vetorDeArvores = arvoresB;
+
+    const posicoesAprovadas = [];
+    const distanciaMinima = 10.0; // Distância mínima que você quer entre as árvores
+
+    // Percorre o vetor de arvores para reposiciona-las
+    for (let i = 0; i < vetorDeArvores.length; i++) {
+        const arvore = vetorDeArvores[i];
+
+        let x, y;
+        let posicaoAceita = true;
+        let tentativas = 0; // Trava de tentativas para nova posição
+
+        // Sorteia a nova posição se estiver próximo de uma árvore
+        while (posicaoAceita && tentativas < 25) {
+            x = (Math.random() - 0.5) * larguraPlano;
+            y = (Math.random() - 0.5) * comprimentoPlano - 100;
+
+            posicaoAceita = false; // Assume que a posição é boa
+
+            // Compara com as árvores já aceitas com a atual
+            for (let j = 0; j < posicoesAprovadas.length; j++) {
+                const arvoreAceita = posicoesAprovadas[j];
+
+                // Calcula a distância usando Pitágoras 
+                const distanciaX = x - arvoreAceita.x;
+                const distanciaY = y - arvoreAceita.y;
+                const distanciaReal = Math.sqrt((distanciaX * distanciaX) + (distanciaY * distanciaY));
 
             for (const pos of posicoesAprovadas) {
                 const dx = x - pos.x;
@@ -243,5 +276,13 @@ function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
         
         // Aplica na árvore
         arvore.position.set(x, y, 0); 
+        // Salva a posição da árvore aceita
+        posicoesAprovadas.push({x: x, y: y});
+
+        // Aplica na árvore
+        arvore.position.set(x, y, 0);
+    }
+}
+}
 }
 }
