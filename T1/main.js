@@ -184,8 +184,8 @@ function moverAviao() {
     // Aplica a rotação de forma suave no eixo Y
     aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
 
-    // Adiciona movimentação a hélice
     helice.rotation.y += Math.PI / 10;
+    helice.rotation.y += Math.PI/10;
 }
 
 // Utilizando efeito de esteira infinita

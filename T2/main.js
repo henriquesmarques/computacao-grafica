@@ -158,6 +158,7 @@ initDefaultBasicLight(scene);
 //Criando iluminação direcional
 let luzDirecional;
 
+
 // INIMIGOS
 criarInimigos(2);
 
