@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 import {
     initRenderer,
     initCamera,
@@ -8,7 +8,7 @@ import {
 } from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js'
-import {criarAviao, gerarVariasArvores} from "./util.js";
+import { criarAviao, gerarVariasArvores } from "./util.js";
 
 // VARIÁVEIS GLOBAIS
 const scene = new THREE.Scene();
@@ -41,7 +41,7 @@ document.getElementById("webgl-output").appendChild(stats.domElement);
 
 // PLANOS
 const comprimentoPlano = 250;
-const larguraPlano = 400;
+const larguraPlano = 450;
 
 // Plano A
 const planoA = createGroundPlaneWired(larguraPlano, comprimentoPlano);
@@ -196,34 +196,34 @@ function reposicionarPlano() {
 function reposicionarArvoresPlano(plano) {
     let vetorDeArvores;
 
-    //Verificando qual o plano
-    if (plano === planoA) 
+    // Verificando qual o plano
+    if (plano === planoA)
         vetorDeArvores = arvoresA;
-    else if (plano === planoB) 
+    else if (plano === planoB)
         vetorDeArvores = arvoresB;
-    
-    const posicoesAprovadas = []; 
+
+    const posicoesAprovadas = [];
     const distanciaMinima = 10.0; // Distância mínima que você quer entre as árvores
 
-    //Percorre o vetor de arvores para reposiciona-las
+    // Percorre o vetor de arvores para reposiciona-las
     for (let i = 0; i < vetorDeArvores.length; i++) {
-        const arvore = vetorDeArvores[i]; 
-        
+        const arvore = vetorDeArvores[i];
+
         let x, y;
-        let posicaoAceita= true;
+        let posicaoAceita = true;
         let tentativas = 0; // Trava de tentativas para nova posição
 
-        // Sorteia a nova posição se estiver próximo de um arvore
+        // Sorteia a nova posição se estiver próximo de uma árvore
         while (posicaoAceita && tentativas < 25) {
             x = (Math.random() - 0.5) * larguraPlano;
-            y = (Math.random() - 0.5) * comprimentoPlano - 100 ;
-            
+            y = (Math.random() - 0.5) * comprimentoPlano - 100;
+
             posicaoAceita = false; // Assume que a posição é boa
 
-            // Compara com as arvores ja aceitas com a atual
+            // Compara com as árvores já aceitas com a atual
             for (let j = 0; j < posicoesAprovadas.length; j++) {
                 const arvoreAceita = posicoesAprovadas[j];
-                
+
                 // Calcula a distância usando Pitágoras 
                 const distanciaX = x - arvoreAceita.x;
                 const distanciaY = y - arvoreAceita.y;
@@ -238,11 +238,11 @@ function reposicionarArvoresPlano(plano) {
             tentativas++;
         }
 
-        // Salva a posição da arvore aceita
-        posicoesAprovadas.push({ x: x, y: y });
-        
+        // Salva a posição da árvore aceita
+        posicoesAprovadas.push({x: x, y: y});
+
         // Aplica na árvore
-        arvore.position.set(x, y, 0); 
+        arvore.position.set(x, y, 0);
     }
 }
 

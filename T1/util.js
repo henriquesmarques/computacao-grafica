@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { setDefaultMaterial } from "../libs/util/util.js";
+import {setDefaultMaterial} from "../libs/util/util.js";
 
 export function criarArvore() {
     // Materiais
@@ -39,7 +39,7 @@ export function criarArvore() {
     tronco.add(cone2);
     tronco.add(cone3);
 
-    //Alturas variaveis para as arvores
+    // Alturas variáveis para as árvores
     const alturaAleatoria = 0.7 + Math.random() * 1.5;
     tronco.scale.y = alturaAleatoria;
     tronco.position.y = (alturaCilindro * alturaAleatoria) / 2;
@@ -124,21 +124,21 @@ export function criarAviao() {
     return corpo;
 }
 
-//Criando função para gerar grupo de arvores 
-export function gerarVariasArvores(comprimentoPlano,larguraPlano){
-   const arvores = []; //Lista para colocar as arvores
-    
-    for(let i = 0; i < 25; i++) {
+// Criando função para gerar grupo de árvores
+export function gerarVariasArvores(comprimentoPlano, larguraPlano) {
+    const arvores = []; // Lista para colocar as árvores
+
+    for (let i = 0; i < 25; i++) {
         const arvore = criarArvore();
 
-        //criando posições aleatorias para x e z
-        const x = (Math.random()-0.5) * larguraPlano;
-        const y = (Math.random()-0.5) * comprimentoPlano;
+        // Criando posições aleatórias para x e z
+        const x = (Math.random() - 0.5) * larguraPlano;
+        const y = (Math.random() - 0.5) * comprimentoPlano;
 
-        if (Math.abs(x) > 20) { 
+        if (Math.abs(x) > 20) {
             arvore.position.set(x, y, 0);
             // Aplica a rotação na árvore 
-            arvore.rotation.x = Math.PI / 2; 
+            arvore.rotation.x = Math.PI / 2;
             arvores.push(arvore); // Adiciona na lista
         }
     }
