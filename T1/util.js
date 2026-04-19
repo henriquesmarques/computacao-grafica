@@ -51,7 +51,7 @@ export function criarAviao() {
     // Materiais
     const materialAzul = setDefaultMaterial("rgb(23,62,125)");
     const materialAmarelo = setDefaultMaterial("rgb(194,140,39)");
-    const materialVermelho = setDefaultMaterial("rgba(180, 30, 60, 1)");
+    const materialVermelho = setDefaultMaterial("rgb(180, 30, 60)");
 
     // Corpo
     // Usando CylinderGeometry com bases distintas
@@ -116,12 +116,15 @@ export function criarAviao() {
     // Usando TorusGeometry para dar sensação de movimento na hélice
     const geometriaArco = new THREE.TorusGeometry(1.85, 0.14);
     const arco = new THREE.Mesh(geometriaArco, materialVermelho);
-    arco.scale.set(1.3, 1.3, 0.01);
+    arco.scale.set(1.1, 1.1, 0.01);
     arco.position.set(0, 6.6, 0);
     arco.rotation.x = -Math.PI / 2;
     corpo.add(arco);
 
-    return corpo;
+    return {
+        corpo: corpo,
+        helice: helice
+    };
 }
 
 // Criando função para gerar grupo de árvores

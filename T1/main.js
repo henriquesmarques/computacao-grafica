@@ -76,7 +76,9 @@ mira.position.set(0, 10, -65);
 scene.add(mira);
 
 // AVIÃO
-const aviao = criarAviao();
+const objeto = criarAviao();
+const aviao = objeto.corpo;
+const helice = objeto.helice;
 // Deita o avião para apontar para frente e gira para ficar de barriga para baixo
 aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
 aviao.position.set(0, 10, -90); // Avião inicia em Z -90
@@ -174,6 +176,9 @@ function moverAviao() {
 
     // Aplica a rotação de forma suave no eixo Y
     aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
+
+    // Adiciona movimentação a hélice
+    helice.rotation.y += Math.PI/10;
 }
 
 // Utilizando efeito de esteira infinita
