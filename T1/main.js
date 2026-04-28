@@ -8,7 +8,7 @@ import {
 } from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js'
-import { criarAviao, gerarVariasArvores } from "./util.js";
+import {criarAviao, criarArvores, iniciarCamera} from "./util.js";
 
 // VARIÁVEIS GLOBAIS
 const scene = new THREE.Scene();
@@ -16,13 +16,14 @@ const renderer = initRenderer();
 let animationOn = true; // Controla se a animação está ativa
 let valorFOG = 125;
 const velocidade = 0.6; // Velocidade constante
+const distanciaMinima = 10;
 const alvoLerp = new THREE.Vector3();
 
 // ILUMINAÇÃO
 initDefaultBasicLight(scene);
 
 // CÂMERA
-const camera = initCamera(new THREE.Vector3(0, 20, -45));
+const camera = iniciarCamera(new THREE.Vector3(0, 25, -30));
 scene.add(camera);
 
 // Escuta mudanças no tamanho da janela
@@ -58,10 +59,12 @@ let listaPlanos = [planoA, planoB];
 
 // ÁRVORES
 // Adicionado as árvores nos planos
-const arvoresA = gerarVariasArvores(comprimentoPlano, larguraPlano);
+const arvoresA = criarArvores(comprimentoPlano, larguraPlano, 50);
+const arvoresB = criarArvores(comprimentoPlano, larguraPlano, 50);
 planoA.add(...arvoresA);
-const arvoresB = gerarVariasArvores(comprimentoPlano, larguraPlano);
 planoB.add(...arvoresB);
+reposicionarArvoresPlano(planoA, distanciaMinima);
+reposicionarArvoresPlano(planoB, distanciaMinima);
 
 // CUBO DE MIRA
 const cubeGeometry = new THREE.BoxGeometry(5, 5, 5);
@@ -102,7 +105,6 @@ buildInterface();
 render();
 
 
-
 function buildInterface() {
     // Controles
     const controls = new function () {
@@ -135,20 +137,24 @@ function render() {
         raycaster.ray.intersectPlane(paredeInvisivel, mira.position);
 
         // Limitando o movimento do cubo para não ir para baixo do plano
-        if (mira.position.y < 7.0) mira.position.y = 7.0;
-        if (mira.position.y > 40.0) mira.position.y = 40.0; // Limite superior
-        if (mira.position.x > 70.0) mira.position.x = 70.0; // Limite lateral
-        if (mira.position.x < -70.0) mira.position.x = -70.0;
+        if (mira.position.y < 10) mira.position.y = 10;
+        if (mira.position.y > 30) mira.position.y = 30; // Limite superior
+        if (mira.position.x > 30) mira.position.x = 30; // Limite lateral
+        if (mira.position.x < -30) mira.position.x = -30;
 
         // Movimento em Z constante e em sentido negativo
         aviao.position.z -= velocidade;
         mira.position.z -= velocidade;
+
         camera.position.z -= velocidade;
         camera.position.x = aviao.position.x;
-        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 50);
+        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 30);
+        if (camera.position.y > 15) camera.position.y = 15; // Limite superior
+        if (camera.position.x > 5) camera.position.x = 5; // Limite lateral
+        if (camera.position.x < -5) camera.position.x = -5;
 
         // Parede precisa se manter à mesma distância da câmera
-        paredeInvisivel.constant = -camera.position.z + 65;
+        paredeInvisivel.constant = -camera.position.z + 65 + 30;
 
         // Chama a função mover avião
         moverAviao();
@@ -178,7 +184,7 @@ function moverAviao() {
     aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
 
     // Adiciona movimentação a hélice
-    helice.rotation.y += Math.PI/10;
+    helice.rotation.y += Math.PI / 10;
 }
 
 // Utilizando efeito de esteira infinita
@@ -193,61 +199,49 @@ function reposicionarPlano() {
             // Move o plano após o último plano visível
             plano.position.z -= listaPlanos.length * comprimentoPlano;
             // Chama a função para mudar as árvores de lugar
-            reposicionarArvoresPlano(plano);
+            reposicionarArvoresPlano(plano, distanciaMinima);
         }
     }
 }
 
-function reposicionarArvoresPlano(plano) {
-    let vetorDeArvores;
-
-    // Verificando qual o plano
-    if (plano === planoA)
-        vetorDeArvores = arvoresA;
-    else if (plano === planoB)
-        vetorDeArvores = arvoresB;
-
+function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
+    const arvores = plano === planoA ? arvoresA : arvoresB;
     const posicoesAprovadas = [];
-    const distanciaMinima = 10.0; // Distância mínima que você quer entre as árvores
+    const distanciaMinima2 = distanciaMinima * distanciaMinima; // comparar distâncias ao quadrado evita sqrt
 
-    // Percorre o vetor de arvores para reposiciona-las
-    for (let i = 0; i < vetorDeArvores.length; i++) {
-        const arvore = vetorDeArvores[i];
-
+    for (const arvore of arvores) {
         let x, y;
-        let posicaoAceita = true;
-        let tentativas = 0; // Trava de tentativas para nova posição
+        let ehValido = false;
+        let tentativas = 0;
+        const maxTentativas = 50;
 
-        // Sorteia a nova posição se estiver próximo de uma árvore
-        while (posicaoAceita && tentativas < 25) {
+        do {
             x = (Math.random() - 0.5) * larguraPlano;
             y = (Math.random() - 0.5) * comprimentoPlano - 100;
 
-            posicaoAceita = false; // Assume que a posição é boa
+            ehValido = true; // assumimos válida até provar o contrário
 
-            // Compara com as árvores já aceitas com a atual
-            for (let j = 0; j < posicoesAprovadas.length; j++) {
-                const arvoreAceita = posicoesAprovadas[j];
+            for (const pos of posicoesAprovadas) {
+                const dx = x - pos.x;
+                const dy = y - pos.y;
+                const dist2 = dx * dx + dy * dy;
 
-                // Calcula a distância usando Pitágoras 
-                const distanciaX = x - arvoreAceita.x;
-                const distanciaY = y - arvoreAceita.y;
-                const distanciaReal = Math.sqrt((distanciaX * distanciaX) + (distanciaY * distanciaY));
-
-                // Se a distância for menor que o limite é invalida
-                if (distanciaReal < distanciaMinima) {
-                    posicaoAceita = true;
-                    break; //interrompe a comparação e sorteia nova posição
+                if (dist2 < distanciaMinima2) {
+                    ehValido = false;
+                    break;
                 }
             }
+
             tentativas++;
+        } while (!ehValido && tentativas < maxTentativas);
+
+        if (!ehValido) {
+            console.warn(`reposicionarArvoresPlano: não encontrou posição válida após ${tentativas} tentativas, colocando árvore mesmo assim.`);
         }
 
-        // Salva a posição da árvore aceita
-        posicoesAprovadas.push({x: x, y: y});
+        posicoesAprovadas.push({ x: x, y: y });
 
-        // Aplica na árvore
+        // mantém outras propriedades da árvore (rotations, scale) e apenas altera posição
         arvore.position.set(x, y, 0);
     }
 }
-

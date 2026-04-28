@@ -128,10 +128,10 @@ export function criarAviao() {
 }
 
 // Criando função para gerar grupo de árvores
-export function gerarVariasArvores(comprimentoPlano, larguraPlano) {
+export function criarArvores(comprimentoPlano, larguraPlano, total) {
     const arvores = []; // Lista para colocar as árvores
 
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < total; i++) {
         const arvore = criarArvore();
 
         // Criando posições aleatórias para x e z
@@ -146,4 +146,11 @@ export function gerarVariasArvores(comprimentoPlano, larguraPlano) {
         }
     }
     return arvores;
+}
+
+export function iniciarCamera(position) {
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    camera.position.copy(position);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+    return camera;
 }
