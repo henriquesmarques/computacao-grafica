@@ -1,27 +1,26 @@
 import * as THREE from "three";
-import {
-    initRenderer,
-    initDefaultBasicLight,
-    onWindowResize,
-    createGroundPlaneWired
-} from "../libs/util/util.js";
+import {initRenderer, initDefaultBasicLight, onWindowResize} from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
-import GUI from '../libs/util/dat.gui.module.js'
-import {criarAviao, criarArvores, iniciarCamera} from "./utils.js";
+import GUI from '../libs/util/dat.gui.module.js';
+import {
+    criarAviao,
+    criarArvores,
+    iniciarCamera,
+    calcularAlturaTerreno
+} from "./util.js";
 
 // VARIÁVEIS GLOBAIS
 const scene = new THREE.Scene();
 const renderer = initRenderer();
-let animationOn = true; // Controla se a animação está ativa
-let valorFOG = 125;
-const velocidade = 0.6; // Velocidade constante
-const distanciaMinima = 10;
-const alvoLerp = new THREE.Vector3();
+let animacaoAtiva = true;
+let valorNevoa = 125;
+const velocidadeDeslocamento = 0.6;
+const vetorInterpolacao = new THREE.Vector3();
 
 // --- TRABALHO 1 ---
 
-// FOG (Névoa)
-setFog();
+// NÉVOA (Fog)
+configurarNevoa();
 
 // CÂMERA
 const camera = iniciarCamera(new THREE.Vector3(0, 25, -30));
@@ -31,29 +30,29 @@ window.addEventListener('resize', function () {
 }, false);
 
 // STATUS (FPS)
-const stats = new Stats();
-document.getElementById("webgl-output").appendChild(stats.domElement);
+const status = new Stats();
+document.getElementById("webgl-output").appendChild(status.domElement);
 
 // AVIÃO
-const objeto = criarAviao();
-const aviao = objeto.corpo;
-const helice = objeto.helice;
+const objetoAviao = criarAviao();
+const aviao = objetoAviao.corpo;
+const helice = objetoAviao.helice;
 aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
 aviao.position.set(0, 10, -90);
 scene.add(aviao);
 
 // CUBO DE MIRA
-const cubeGeometry = new THREE.BoxGeometry(5, 5, 5);
-const materialCube = new THREE.MeshBasicMaterial({
+const geometriaMira = new THREE.BoxGeometry(5, 5, 5);
+const materialMira = new THREE.MeshBasicMaterial({
     color: 0x00ff00,
     wireframe: true,
     wireframeLinewidth: 1
 });
-const mira = new THREE.Mesh(cubeGeometry, materialCube)
-mira.position.set(0, 10, -65);
-scene.add(mira);
+const cuboMira = new THREE.Mesh(geometriaMira, materialMira)
+cuboMira.position.set(0, 10, -65);
+scene.add(cuboMira);
 
-// INTERAÇÃO COM RAYCASTER 
+// INTERAÇÃO COM RAYCASTER
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 65);
@@ -65,180 +64,161 @@ window.addEventListener('mousemove', function (event) {
 
 // --- TRABALHO 2 ---
 
-// PLANOS
-const comprimentoPlano = 250;
-const larguraPlano = 450;
-// Plano A
-const planoA = createGroundPlaneWired(larguraPlano, comprimentoPlano);
-scene.add(planoA);
-planoA.material.color.set("darkgreen");
-// Plano B
-const planoB = createGroundPlaneWired(larguraPlano, comprimentoPlano);
-planoB.position.z = -comprimentoPlano; // inicia B assim que termina A
-scene.add(planoB);
-planoB.material.color.set("darkgreen");
-let listaPlanos = [planoA, planoB];
+// CONFIGURAÇÕES DO TERRENO
+const comprimentoTerreno = 300;
+const larguraTerreno = 450;
+const segmentosTerreno = 128;
+
+const geometriaPlano = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerreno, segmentosTerreno, segmentosTerreno);
+const materialPlano = new THREE.MeshLambertMaterial({color: "darkgreen"});
+const planoTerreno = new THREE.Mesh(geometriaPlano, materialPlano);
+planoTerreno.rotation.x = -Math.PI / 2;
+scene.add(planoTerreno);
 
 // ÁRVORES
-const arvoresA = criarArvores(comprimentoPlano, larguraPlano, 50);
-const arvoresB = criarArvores(comprimentoPlano, larguraPlano, 50);
-planoA.add(...arvoresA);
-planoB.add(...arvoresB);
-reposicionarArvoresPlano(planoA, distanciaMinima);
-reposicionarArvoresPlano(planoB, distanciaMinima);
+const quantidadeArvores = 350;
+const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
+
+listaArvores.forEach(arvore => {
+    arvore.scale.set(0.4, 0.4, 0.4);
+    scene.add(arvore);
+
+    // Posicionamento aleatório inicial espalhado ao longo do espaço visível
+    arvore.position.x = (Math.random() - 0.5) * larguraTerreno;
+    arvore.position.z = camera.position.z - Math.random() * comprimentoTerreno;
+
+    // Obtém a altura correspondente àquelas coordenadas para ancorar a árvore ao solo
+    arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+});
 
 // ILUMINAÇÃO
 initDefaultBasicLight(scene);
 
 // --- FIM DO TRABALHO 2 ---
 
-buildInterface();
-render();
+construirInterface();
+renderizar();
 
-function buildInterface() {
-    // Controles
-    const controls = new function () {
-        this.onChangeAnimation = function () {
-            animationOn = !animationOn;
+function construirInterface() {
+    const controlos = new function () {
+        this.alternarAnimacao = function () {
+            animacaoAtiva = !animacaoAtiva;
         };
-        this.fog = valorFOG;
+        this.nevoa = valorNevoa;
 
-        this.changeFOG = function () {
-            valorFOG = this.fog;
-            scene.fog.far = this.fog;
+        this.alterarNevoa = function () {
+            valorNevoa = this.nevoa;
+            scene.fog.far = this.nevoa;
         };
     };
 
-    // Interface
     const gui = new GUI();
-    gui.add(controls, 'onChangeAnimation', true).name("Animation On/Off");
-    gui.add(controls, 'fog', 50, 200)
+    gui.add(controlos, 'alternarAnimacao', true).name("Animação On/Off");
+    gui.add(controlos, 'nevoa', 50, 200)
         .onChange(function () {
-            controls.changeFOG()
+            controlos.alterarNevoa()
         })
-        .name("Change FOG");
+        .name("Alterar Névoa");
 }
 
-function render() {
-    requestAnimationFrame(render);
-    if (animationOn) {
-        // Atualiza a posição da mira baseada no mouse
+function renderizar() {
+    requestAnimationFrame(renderizar);
+    if (animacaoAtiva) {
+        // Atualiza a posição do cubo de mira baseada no ponteiro do rato
         raycaster.setFromCamera(mouse, camera);
-        raycaster.ray.intersectPlane(paredeInvisivel, mira.position);
+        raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
-        // Limitando o movimento do cubo para não ir para baixo do plano
-        if (mira.position.y < 10) mira.position.y = 10;
-        if (mira.position.y > 30) mira.position.y = 30; // Limite superior
-        if (mira.position.x > 30) mira.position.x = 30; // Limite lateral
-        if (mira.position.x < -30) mira.position.x = -30;
+        // Limita o movimento do cubo de mira
+        if (cuboMira.position.y < 10) cuboMira.position.y = 10;
+        if (cuboMira.position.y > 30) cuboMira.position.y = 30;
+        if (cuboMira.position.x > 30) cuboMira.position.x = 30;
+        if (cuboMira.position.x < -30) cuboMira.position.x = -30;
 
-        // Movimento em Z constante e em sentido negativo
-        aviao.position.z -= velocidade;
-        mira.position.z -= velocidade;
+        // Deslocamento constante no eixo Z (para a frente)
+        aviao.position.z -= velocidadeDeslocamento;
+        cuboMira.position.z -= velocidadeDeslocamento;
+        camera.position.z -= velocidadeDeslocamento;
 
-        camera.position.z -= velocidade;
         camera.position.x = aviao.position.x;
         camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 30);
-        if (camera.position.y > 15) camera.position.y = 15; // Limite superior
-        if (camera.position.x > 5) camera.position.x = 5; // Limite lateral
+
+        // Limita o movimento da câmera
+        if (camera.position.y < 20) camera.position.y = 20;
+        if (camera.position.x > 5) camera.position.x = 5;
         if (camera.position.x < -5) camera.position.x = -5;
 
-        // Parede precisa se manter à mesma distância da câmera
         paredeInvisivel.constant = -camera.position.z + 65 + 30;
 
-        // Chama a função mover avião
-        moverAviao();
+        animarAviao();
 
-        // Chama a função para reutilizar os planos
-        reposicionarPlano();
+        // Recalcula dinamicamente a geometria do terreno e teletransporta as árvores
+        atualizarTerrenoContinuo();
+        reposicionarArvoresEmTempoReal();
     }
-    stats.update();
-    moverAviao();
+    status.update();
     renderer.render(scene, camera);
 }
 
-function moverAviao() {
-    if (!animationOn) return;
+function animarAviao() {
+    if (!animacaoAtiva) return;
 
-    const pontoAlvo = mira.position;
+    const pontoDestino = cuboMira.position;
 
-    // Pega X e Y da mira, mas mantém o Z do avião
-    alvoLerp.set(pontoAlvo.x, pontoAlvo.y, aviao.position.z);
-    aviao.position.lerp(alvoLerp, 0.02);
+    vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
+    aviao.position.lerp(vetorInterpolacao, 0.02);
 
-    // Inclinação da Asa
-    // Somamos Math.PI para virar o avião de cabeça para cima
-    const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * 0.03;
+    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.03;
+    aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
 
-    // Aplica a rotação de forma suave no eixo Y
-    aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
-
-    // Adiciona movimentação a hélice
     helice.rotation.y += Math.PI / 10;
 }
 
-// Utilizando efeito de esteira infinita
-function reposicionarPlano() {
-    for (let i = 0; i < listaPlanos.length; i++) {
-        const plano = listaPlanos[i]; // Pega o plano atual da rodada
-
-        // Como estamos viajando para Z negativo, se a posição Z do plano
-        // for maior que a da câmera ele já saiu da visão traseira.
-        // Somamos 60 para o plano não ir para frente e estar no campo de visão do usuário
-        if (plano.position.z > camera.position.z + 100) {
-            // Move o plano após o último plano visível
-            plano.position.z -= listaPlanos.length * comprimentoPlano;
-            // Chama a função para mudar as árvores de lugar
-            reposicionarArvoresPlano(plano, distanciaMinima);
-        }
-    }
+function configurarNevoa() {
+    const corBase = "rgb(175, 200, 220)";
+    scene.fog = new THREE.Fog(corBase, 1, valorNevoa);
+    renderer.setClearColor(corBase);
 }
 
-function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
-    const arvores = plano === planoA ? arvoresA : arvoresB;
-    const posicoesAprovadas = [];
-    const distanciaMinima2 = distanciaMinima * distanciaMinima; // comparar distâncias ao quadrado evita sqrt
+// Movimenta o plano base acompanhando a câmara e deforma os vértices para dar a ilusão de passagem por um cenário infinito.
+function atualizarTerrenoContinuo() {
+    // Desloca fisicamente o centro do plano de modo a permanecer sempre visível à frente da câmara
+    const deslocamentoZ = camera.position.z - (comprimentoTerreno / 2) + 60;
+    planoTerreno.position.z = deslocamentoZ;
 
-    for (const arvore of arvores) {
-        let x, y;
-        let ehValido = false;
-        let tentativas = 0;
-        const maxTentativas = 50;
+    const arrayPosicoes = geometriaPlano.attributes.position.array;
 
-        do {
-            x = (Math.random() - 0.5) * larguraPlano;
-            y = (Math.random() - 0.5) * comprimentoPlano - 100;
+    // Varre todos os vértices da grelha (grid) e recalcula as elevações baseadas na coordenada real
+    for (let linha = 0; linha <= segmentosTerreno; linha++) {
+        for (let coluna = 0; coluna <= segmentosTerreno; coluna++) {
+            const indiceOriginal = (linha * (segmentosTerreno + 1) + coluna) * 3;
 
-            ehValido = true; // assumimos válida até provar o contrário
+            const coordenadaLocalX = arrayPosicoes[indiceOriginal];
+            const coordenadaLocalY = arrayPosicoes[indiceOriginal + 1];
 
-            for (const pos of posicoesAprovadas) {
-                const dx = x - pos.x;
-                const dy = y - pos.y;
-                const dist2 = dx * dx + dy * dy;
+            // Conversão de Coordenadas: A rotação inicial de -90 graus transformou o Y local no Z do mundo
+            const coordenadaMundoX = coordenadaLocalX;
+            const coordenadaMundoZ = deslocamentoZ - coordenadaLocalY;
 
-                if (dist2 < distanciaMinima2) {
-                    ehValido = false;
-                    break;
-                }
-            }
-
-            tentativas++;
-        } while (!ehValido && tentativas < maxTentativas);
-
-        if (!ehValido) {
-            console.warn(`reposicionarArvoresPlano: não encontrou posição válida após ${tentativas} tentativas, colocando árvore mesmo assim.`);
+            // Aplica a elevação topográfica
+            arrayPosicoes[indiceOriginal + 2] = calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ);
         }
-
-        posicoesAprovadas.push({ x: x, y: y });
-
-        // mantém outras propriedades da árvore (rotations, scale) e apenas altera posição
-        arvore.position.set(x, y, 0);
     }
+
+    // Sinaliza o renderizador de que as posições foram alteradas
+    geometriaPlano.attributes.position.needsUpdate = true;
+    geometriaPlano.computeVertexNormals(); // Essencial para recalcular o impacto da luz nas novas inclinações
 }
 
-// FOG (Névoa)
-function setFog() {
-    const baseColor = "rgb(175, 200, 220)"; // a cor do FOG deve ser a mesma do background
-    scene.fog = new THREE.Fog(baseColor, 1, valorFOG);
-    renderer.setClearColor(baseColor);
+// Monitoriza as árvores. Quando uma árvore fica muito para trás, ela é movida para a linha do horizonte.
+export function reposicionarArvoresEmTempoReal() {
+    for (let arvore of listaArvores) {
+        if (arvore.position.z > camera.position.z + 20) {
+            // Avança a árvore reciclando-a visualmente
+            arvore.position.z -= comprimentoTerreno;
+            // Sorteia uma nova posição horizontal
+            arvore.position.x = (Math.random() - 0.5) * larguraTerreno;
+            // Adapta a altura da árvore ao novo ponto do relevo
+            arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+        }
+    }
 }
