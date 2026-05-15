@@ -13,8 +13,9 @@ import {
 const scene = new THREE.Scene();
 const renderer = initRenderer();
 let animacaoAtiva = true;
-let valorNevoa = 125;
-const velocidadeDeslocamento = 0.6;
+let valorNevoa = 200;
+// MODIFICAÇÃO: Alterado de 'const' para 'let' para permitir a mudança de velocidade
+let velocidadeDeslocamento = 0.6;
 const vetorInterpolacao = new THREE.Vector3();
 
 // --- TRABALHO 1 ---
@@ -52,6 +53,12 @@ const cuboMira = new THREE.Mesh(geometriaMira, materialMira)
 cuboMira.position.set(0, 10, -65);
 scene.add(cuboMira);
 
+// --- TRABALHO 2 ---
+
+// Oculta o cursor
+document.body.style.cursor = 'none';
+renderer.domElement.style.cursor = 'none';
+
 // INTERAÇÃO COM RAYCASTER
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -62,7 +69,29 @@ window.addEventListener('mousemove', function (event) {
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 }, false);
 
-// --- TRABALHO 2 ---
+window.addEventListener('keydown', function(event) {
+    switch(event.key) {
+        case '1':
+            velocidadeDeslocamento = 0.6; // Modo Lento
+            break;
+        case '2':
+            velocidadeDeslocamento = 1.2; // Modo Normal
+            break;
+        case '3':
+            velocidadeDeslocamento = 1.8; // Modo Rápido
+            break;
+        case 'Escape':
+            pausarSimulacao();
+            break;
+    }
+}, false);
+
+// MODIFICAÇÃO: Evento de Mouse (Retomar com clique)
+window.addEventListener('mousedown', function(event) {
+    if (!animacaoAtiva) {
+        retomarSimulacao();
+    }
+}, false);
 
 // CONFIGURAÇÕES DO TERRENO
 const comprimentoTerreno = 300;
@@ -102,7 +131,12 @@ renderizar();
 function construirInterface() {
     const controlos = new function () {
         this.alternarAnimacao = function () {
-            animacaoAtiva = !animacaoAtiva;
+            // MODIFICAÇÃO: Usando as novas funções de pausa/retomada
+            if (animacaoAtiva) {
+                pausarSimulacao();
+            } else {
+                retomarSimulacao();
+            }
         };
         this.nevoa = valorNevoa;
 
@@ -114,7 +148,7 @@ function construirInterface() {
 
     const gui = new GUI();
     gui.add(controlos, 'alternarAnimacao', true).name("Animação On/Off");
-    gui.add(controlos, 'nevoa', 50, 200)
+    gui.add(controlos, 'nevoa', 150, 250)
         .onChange(function () {
             controlos.alterarNevoa()
         })
@@ -210,7 +244,7 @@ function atualizarTerrenoContinuo() {
 }
 
 // Monitoriza as árvores. Quando uma árvore fica muito para trás, ela é movida para a linha do horizonte.
-export function reposicionarArvoresEmTempoReal() {
+function reposicionarArvoresEmTempoReal() {
     for (let arvore of listaArvores) {
         if (arvore.position.z > camera.position.z + 20) {
             // Avança a árvore reciclando-a visualmente
@@ -221,4 +255,18 @@ export function reposicionarArvoresEmTempoReal() {
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
         }
     }
+}
+
+function pausarSimulacao() {
+    animacaoAtiva = false;
+    document.body.style.cursor = 'default';
+    renderer.domElement.style.cursor = 'default';
+    cuboMira.visible = false;
+}
+
+function retomarSimulacao() {
+    animacaoAtiva = true;
+    document.body.style.cursor = 'none';
+    renderer.domElement.style.cursor = 'none';
+    cuboMira.visible = true;
 }
