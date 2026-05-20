@@ -140,9 +140,7 @@ export function criarArvores(comprimentoPlano, larguraPlano, total) {
 
         if (Math.abs(x) > 20) {
             arvore.position.set(x, y, 0);
-            // Aplica a rotação na árvore 
-            arvore.rotation.x = Math.PI / 2;
-            arvores.push(arvore); // Adiciona na lista
+            arvores.push(arvore);
         }
     }
     return arvores;
@@ -153,4 +151,75 @@ export function iniciarCamera(position) {
     camera.position.copy(position);
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     return camera;
+}
+
+// ============================================================================
+// SISTEMA DE GERAÇÃO DE RUÍDO CONTÍNUO (FRACTAL VALUE NOISE)
+// ============================================================================
+// Este conjunto de funções gera elevações suaves de montanhas utilizando uma
+// abordagem matemática pseudo-aleatória consistente, permitindo mapear a altura
+// de um terreno infinito dependendo apenas das coordenadas globais X e Z.
+
+// Função Hash: Gera um valor pseudo-aleatório baseado nas coordenadas de entrada.
+// Para as mesmas coordenadas (x,y), devolve sempre o mesmo resultado.
+function gerarHash(x, y) {
+    let valor = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+    return valor - Math.floor(valor);
+}
+
+// Interpolação Linear: Mistura dois valores gradualmente baseada num fator (entre 0 e 1).
+function interpolacaoLinear(inicio, fim, fator) {
+    return inicio + fator * (fim - inicio);
+}
+
+// Ruído 2D Suavizado: Utiliza o Hash nos 4 cantos de uma grelha imaginária e
+// suaviza as transições (smoothstep) para evitar solavancos grosseiros.
+function gerarRuido2D(x, y) {
+    const indiceX = Math.floor(x);
+    const indiceY = Math.floor(y);
+    const parteFracionariaX = x - indiceX;
+    const parteFracionariaY = y - indiceY;
+
+    // Aplicação da curva matemática de suavização (Smoothstep)
+    const curvaX = parteFracionariaX * parteFracionariaX * (3.0 - 2.0 * parteFracionariaX);
+    const curvaY = parteFracionariaY * parteFracionariaY * (3.0 - 2.0 * parteFracionariaY);
+
+    // Obtém a fundação aleatória nos 4 cantos de "células" matemáticas
+    const baseInferiorEsquerda = gerarHash(indiceX, indiceY);
+    const baseInferiorDireita = gerarHash(indiceX + 1, indiceY);
+    const baseSuperiorEsquerda = gerarHash(indiceX, indiceY + 1);
+    const baseSuperiorDireita = gerarHash(indiceX + 1, indiceY + 1);
+
+    // Mistura (Interpola) horizontalmente os valores inferiores e depois superiores
+    const resultadoInferior = interpolacaoLinear(baseInferiorEsquerda, baseInferiorDireita, curvaX);
+    const resultadoSuperior = interpolacaoLinear(baseSuperiorEsquerda, baseSuperiorDireita, curvaX);
+
+    // Mistura verticalmente o resultado final
+    return interpolacaoLinear(resultadoInferior, resultadoSuperior, curvaY);
+}
+
+// Ruído Fractal: Agrega (soma) múltiplas camadas (oitavas) de ruído,
+// onde a cada passo se adicionam detalhes menores mas com menor impacto na altura.
+// Isto cria silhuetas com grandes montanhas contendo pequenos picos rochosos.
+function gerarRuidoFractal(x, y, oitavas = 4) {
+    let valorAcumulado = 0;
+    let amplitudeTotal = 1;
+    let frequenciaTotal = 0.015; // Modela o quão "espalhadas" são as montanhas
+    let somaPesos = 0;
+
+    for (let iteracao = 0; iteracao < oitavas; iteracao++) {
+        valorAcumulado += gerarRuido2D(x * frequenciaTotal, y * frequenciaTotal) * amplitudeTotal;
+        somaPesos += amplitudeTotal;
+
+        amplitudeTotal *= 0.5; // Reduz a altura dos micro-detalhes
+        frequenciaTotal *= 2.0; // Aumenta a quantidade (frequência) das irregularidades
+    }
+    return valorAcumulado / somaPesos; // Normaliza o ruído para uma escala limpa entre 0 e 1
+}
+
+// Devolve o "Z" (aqui mapeado como Y no mundo 3D) final dos vértices da malha.
+export function calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ) {
+    const ruido = gerarRuidoFractal(coordenadaMundoX, coordenadaMundoZ);
+    // Extrapola o resultado final (de 0 a 1) para a nossa topografia visível
+    return -15 + ruido * 25;
 }
