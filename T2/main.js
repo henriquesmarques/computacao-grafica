@@ -256,9 +256,10 @@ function gerenciarDisparos(deltaTime) {
 }
 
 function gerenciarColisoes() {
-    // Atualiza a Bounding Box principal do avião apenas 1 vez por frame
+    // Atualiza a Bounding Box principal do avião
     bbAviao.setFromObject(aviao);
 
+    // Monitora o dando sofrido/causado
     verificarDanoNoPlayer();
     verificarDanoNosInimigos();
 }
@@ -276,7 +277,7 @@ function verificarDanoNoPlayer() {
             continue;
         }
 
-        // Limpa projéteis muito distantes para poupar memória
+        // Limpa projéteis muito distantes
         if (projetil.position.distanceTo(aviao.position) > 300) {
             removerProjetilDaCena(projetil, listaProjeteis, i);
         }
@@ -420,6 +421,31 @@ function reposicionarInimigo(inimigo) {
     inimigo.position.y = 10 + Math.random() * 20;
 }
 
+function atualizarInimigos() {
+    for (let inimigo of listaInimigos) {
+        if (inimigo.userData.morrendo) {
+            // Animação de Morte
+            inimigo.scale.multiplyScalar(0.9);
+
+            // Quando fica muito pequeno, renasce no fundo
+            if (inimigo.scale.x < 0.1) {
+                reposicionarInimigo(inimigo);
+            }
+        } else {
+            // Movimento lateral contínuo
+            inimigo.position.x += inimigo.userData.velocidadeX;
+
+            // Movimento na direção contrária do avião
+            inimigo.position.z += (velocidadeDeslocamento * 0.5);
+
+            // Reposiciona ao sair da tela pela lateral ou ficou pra trás da câmera
+            if (inimigo.position.x > 80 || inimigo.position.x < -80 || inimigo.position.z > camera.position.z + 20) {
+                reposicionarInimigo(inimigo);
+            }
+        }
+    }
+}
+
 // FUNÇÕES DE TIRO
 function atirarPlayer() {
     const geometriaTiro = new THREE.BoxGeometry(1.5, 1.5, 6.0);
@@ -465,29 +491,4 @@ function removerProjetilDaCena(projetil, lista, index) {
     if(projetil.geometry) projetil.geometry.dispose();
     if(projetil.material) projetil.material.dispose();
     lista.splice(index, 1);
-}
-
-function atualizarInimigos() {
-    for (let inimigo of listaInimigos) {
-        if (inimigo.userData.morrendo) {
-            // Animação de Morte
-            inimigo.scale.multiplyScalar(0.9);
-
-            // Quando fica muito pequeno, renasce no fundo
-            if (inimigo.scale.x < 0.1) {
-                reposicionarInimigo(inimigo);
-            }
-        } else {
-            // Movimento lateral contínuo
-            inimigo.position.x += inimigo.userData.velocidadeX;
-
-            // Movimento na direção contrária do avião
-            inimigo.position.z += (velocidadeDeslocamento * 0.5);
-
-            // Reposiciona ao sair da tela pela lateral ou ficou pra trás da câmera
-            if (inimigo.position.x > 80 || inimigo.position.x < -80 || inimigo.position.z > camera.position.z + 20) {
-                reposicionarInimigo(inimigo);
-            }
-        }
-    }
 }
