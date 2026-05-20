@@ -20,19 +20,16 @@ const relogio = new THREE.Clock();
 
 // VARIÁVEIS DO SISTEMA DE COMBATE
 const listaInimigos = [];
-const listaProjeteis = []; // Tiros dos inimigos
-const listaProjeteisPlayer = []; // Tiros do jogador
+const listaProjeteis = [];
+const listaProjeteisPlayer = [];
 let tempoDecorridoInimigos = 0;
-const cadenciaTiroInimigos = 3.0; // 1 tiro a cada 3s
+const cadenciaTiroInimigos = 1.5;
 
 let mousePressionado = false;
 let tempoDecorridoTiroPlayer = 0;
-const cadenciaTiroPlayer = 0.15; // Velocidade do tiro contínuo do player
+const cadenciaTiroPlayer = 0.15;
 
-// Objeto para armazenar os status que aparecerão no painel GUI
-const statusJogo = {
-    tirosSofridos: 0
-};
+const statusJogo = { tirosSofridos: 0 };
 
 // --- TRABALHO 1 ---
 
@@ -57,6 +54,8 @@ const helice = objetoAviao.helice;
 aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
 aviao.position.set(0, 10, -90);
 scene.add(aviao);
+
+// --- TRABALHO 2 ---
 
 // CUBO DE MIRA
 const geometriaMira = new THREE.BoxGeometry(5, 5, 5);
@@ -97,17 +96,17 @@ window.addEventListener('mouseup', function(event) {
     if (event.button === 0) mousePressionado = false;
 }, false);
 
-// --- CONTROLES DE TECLADO ---
+// CONTROLES DE TECLADO
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case '1':
-            velocidadeDeslocamento = 0.6; // Múltiplo 1
+            velocidadeDeslocamento = 0.6;
             break;
         case '2':
-            velocidadeDeslocamento = 1.2; // Múltiplo 2
+            velocidadeDeslocamento = 1.2;
             break;
         case '3':
-            velocidadeDeslocamento = 1.8; // Múltiplo 3
+            velocidadeDeslocamento = 1.8;
             break;
         case 'Escape':
             pausarSimulacao();
@@ -115,27 +114,10 @@ window.addEventListener('keydown', function(event) {
     }
 }, false);
 
-function pausarSimulacao() {
-    animacaoAtiva = false;
-    document.body.style.cursor = 'default';
-    renderer.domElement.style.cursor = 'default';
-    cuboMira.visible = false;
-}
-
-function retomarSimulacao() {
-    animacaoAtiva = true;
-    document.body.style.cursor = 'none';
-    renderer.domElement.style.cursor = 'none';
-    cuboMira.visible = true;
-}
-
-// --- TRABALHO 2 ---
-
 // CONFIGURAÇÕES DO TERRENO
 const comprimentoTerreno = 300;
 const larguraTerreno = 450;
 const segmentosTerreno = 128;
-
 const geometriaPlano = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerreno, segmentosTerreno, segmentosTerreno);
 const materialPlano = new THREE.MeshLambertMaterial({color: "darkgreen"});
 const planoTerreno = new THREE.Mesh(geometriaPlano, materialPlano);
@@ -158,92 +140,7 @@ listaArvores.forEach(arvore => {
 initDefaultBasicLight(scene);
 
 // INIMIGOS
-function criarInimigos(quantidade) {
-    const geometriaInimigo = new THREE.IcosahedronGeometry(4, 0);
-    const materialInimigo = new THREE.MeshLambertMaterial({
-        color: 0xaa0000,
-        flatShading: true
-    });
-
-    for (let i = 0; i < quantidade; i++) {
-        const inimigo = new THREE.Mesh(geometriaInimigo, materialInimigo);
-        inimigo.userData = { morrendo: false, velocidadeX: 0 };
-        reposicionarInimigo(inimigo);
-        scene.add(inimigo);
-        listaInimigos.push(inimigo);
-    }
-}
-
-function reposicionarInimigo(inimigo) {
-    inimigo.scale.set(1, 1, 1);
-    inimigo.rotation.set(0, 0, 0);
-    inimigo.userData.morrendo = false;
-
-    // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa (fog)
-    inimigo.position.z = aviao.position.z - 220 - (Math.random() * 80);
-
-    // Posição X muito mais variada (podem nascer mais perto do centro ou mais nas pontas)
-    const ladoDireito = Math.random() > 0.5;
-    inimigo.position.x = ladoDireito ? (20 + Math.random() * 40) : (-20 - Math.random() * 40);
-
-    // Velocidade aleatória, cruzando o campo de visão
-    inimigo.userData.velocidadeX = (ladoDireito ? -1 : 1) * (0.1 + Math.random() * 0.25);
-
-    // Altura aleatória aproveitando toda a área da mira (10 a 30)
-    inimigo.position.y = 10 + Math.random() * 20;
-}
-
-// Cria 2 inimigos para compor a cena
 criarInimigos(2);
-
-// FUNÇÕES DE TIRO
-function atirarPlayer() {
-    // Substituindo o Plane (2D) por BoxGeometry (3D) para o tiro ter volume e ser muito mais visível
-    const geometriaTiro = new THREE.BoxGeometry(1.5, 1.5, 6.0);
-    const materialTiro = new THREE.MeshBasicMaterial({color: 0x00ff00});
-    const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
-
-    projetil.position.copy(aviao.position);
-
-    // Calcula a direção em direção ao cubo de mira
-    const direcao = new THREE.Vector3();
-    direcao.subVectors(cuboMira.position, aviao.position).normalize();
-    projetil.userData.direcao = direcao;
-
-    // Como agora é um cubo com profundidade, basta olhar para o alvo (não precisa de rotateX)
-    projetil.lookAt(cuboMira.position);
-
-    scene.add(projetil);
-    listaProjeteisPlayer.push(projetil);
-}
-
-function atirarInimigos() {
-    const geometriaTiro = new THREE.ConeGeometry(0.5, 3, 8);
-    geometriaTiro.rotateX(Math.PI / 2); // Deita o cone
-    const materialTiro = new THREE.MeshBasicMaterial({color: 0xffff00});
-
-    for (let inimigo of listaInimigos) {
-        if (!inimigo.userData.morrendo && inimigo.position.z < camera.position.z) {
-            const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
-            projetil.position.copy(inimigo.position);
-
-            const direcao = new THREE.Vector3();
-            direcao.subVectors(aviao.position, inimigo.position).normalize();
-            projetil.userData.direcao = direcao;
-            projetil.lookAt(aviao.position);
-
-            scene.add(projetil);
-            listaProjeteis.push(projetil);
-        }
-    }
-}
-
-function removerProjetilDaCena(projetil, lista, index) {
-    scene.remove(projetil);
-    if(projetil.geometry) projetil.geometry.dispose();
-    if(projetil.material) projetil.material.dispose();
-    lista.splice(index, 1);
-}
 
 construirInterface();
 renderizar();
@@ -264,8 +161,21 @@ function construirInterface() {
         })
         .name("Alterar Névoa");
 
-    // Adiciona o contador de dano no GUI. O ".listen()" faz a mágica de atualizar a tela automaticamente.
     gui.add(statusJogo, 'tirosSofridos').name("Tiros Sofridos").listen();
+}
+
+function pausarSimulacao() {
+    animacaoAtiva = false;
+    document.body.style.cursor = 'default';
+    renderer.domElement.style.cursor = 'default';
+    cuboMira.visible = false;
+}
+
+function retomarSimulacao() {
+    animacaoAtiva = true;
+    document.body.style.cursor = 'none';
+    renderer.domElement.style.cursor = 'none';
+    cuboMira.visible = true;
 }
 
 function renderizar() {
@@ -274,65 +184,36 @@ function renderizar() {
     const deltaTime = relogio.getDelta();
 
     if (animacaoAtiva) {
-        // --- ATUALIZAÇÕES BASE (Câmera, Mira, Avião) ---
         raycaster.setFromCamera(mouse, camera);
         raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
-        //Atualiza limite da mira
+        // Limitação da mira
         if (cuboMira.position.y < 10) cuboMira.position.y = 10;
         if (cuboMira.position.y > 40) cuboMira.position.y = 40;
         if (cuboMira.position.x > 45) cuboMira.position.x = 45;
         if (cuboMira.position.x < -45) cuboMira.position.x = -45;
 
+        // Movimentação da câmera e do avião
         aviao.position.z -= velocidadeDeslocamento;
         cuboMira.position.z -= velocidadeDeslocamento;
         camera.position.z -= velocidadeDeslocamento;
-
         camera.position.x = aviao.position.x;
         camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 30);
 
+        // Limitação da câmera
         if (camera.position.y < 20) camera.position.y = 20;
         if (camera.position.x > 5) camera.position.x = 5;
         if (camera.position.x < -5) camera.position.x = -5;
 
+        // Atualiza a posição da parede invisível
         paredeInvisivel.constant = -camera.position.z + 65 + 30;
 
         animarAviao();
-        atualizarTerrenoContinuo();
-        reposicionarArvoresEmTempoReal();
+        atualizarTerreno();
+        reposicionarArvores();
+        atualizarInimigos();
 
-        // --- LÓGICA DE INIMIGOS E COMBATE ---
-
-        // 1. Atualizar Inimigos (Morte e Movimentação)
-        for (let inimigo of listaInimigos) {
-            if (inimigo.userData.morrendo) {
-                // Animação de Morte: Girar, encolher e cair
-                inimigo.scale.multiplyScalar(0.9);
-                inimigo.position.y -= 0.5;
-                inimigo.rotation.y += 0.2;
-                inimigo.rotation.z += 0.2;
-
-                // Quando fica muito pequeno, renasce no fundo
-                if (inimigo.scale.x < 0.1) {
-                    reposicionarInimigo(inimigo);
-                }
-            } else {
-                // Movimento lateral contínuo
-                inimigo.position.x += inimigo.userData.velocidadeX;
-
-                // Inimigos agora vêm na SUA DIREÇÃO, o que os torna muito mais fáceis de ver e acertar
-                inimigo.position.z += (velocidadeDeslocamento * 0.5);
-
-                // Saiu da tela pela lateral ou ficou pra trás da câmera? Reposiciona.
-                if (inimigo.position.x > 80 ||
-                    inimigo.position.x < -80 ||
-                    inimigo.position.z > camera.position.z + 20) {
-                    reposicionarInimigo(inimigo);
-                }
-            }
-        }
-
-        // 2. Disparo Contínuo do Player
+        // Disparo do Player
         if (mousePressionado) {
             tempoDecorridoTiroPlayer += deltaTime;
             if (tempoDecorridoTiroPlayer >= cadenciaTiroPlayer) {
@@ -341,24 +222,24 @@ function renderizar() {
             }
         }
 
-        // 3. Disparo dos Inimigos (Cadência de 3 segundos)
+        // Disparo dos Inimigos
         tempoDecorridoInimigos += deltaTime;
         if (tempoDecorridoInimigos >= cadenciaTiroInimigos) {
             atirarInimigos();
             tempoDecorridoInimigos = 0;
         }
 
-        // --- SISTEMA DE COLISÃO (Hitboxes via Box3) ---
+        // SISTEMA DE COLISÃO
         const bbAviao = new THREE.Box3().setFromObject(aviao);
 
-        // 4. Mover tiros dos INIMIGOS e checar colisão com o PLAYER
+        // Mover tiros dos INIMIGOS e checar colisão com o PLAYER
         for (let i = listaProjeteis.length - 1; i >= 0; i--) {
             const projetil = listaProjeteis[i];
             projetil.position.addScaledVector(projetil.userData.direcao, 1.5 + (velocidadeDeslocamento * 0.5));
 
             const bbProjetil = new THREE.Box3().setFromObject(projetil);
             if (bbProjetil.intersectsBox(bbAviao)) {
-                // Sofreu Dano: Atualiza automaticamente no GUI
+                // Atualização no GUI
                 statusJogo.tirosSofridos++;
 
                 removerProjetilDaCena(projetil, listaProjeteis, i);
@@ -444,7 +325,7 @@ function configurarNevoa() {
     renderer.setClearColor(corBase);
 }
 
-function atualizarTerrenoContinuo() {
+function atualizarTerreno() {
     const deslocamentoZ = camera.position.z - (comprimentoTerreno / 2) + 60;
     planoTerreno.position.z = deslocamentoZ;
 
@@ -467,12 +348,122 @@ function atualizarTerrenoContinuo() {
     geometriaPlano.computeVertexNormals();
 }
 
-function reposicionarArvoresEmTempoReal() {
+function reposicionarArvores() {
     for (let arvore of listaArvores) {
         if (arvore.position.z > camera.position.z + 20) {
             arvore.position.z -= comprimentoTerreno;
             arvore.position.x = (Math.random() - 0.5) * larguraTerreno;
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+        }
+    }
+}
+
+// INIMIGOS
+function criarInimigos(quantidade) {
+    const geometriaInimigo = new THREE.IcosahedronGeometry(4, 0);
+    const materialInimigo = new THREE.MeshLambertMaterial({
+        color: 0xaa0000,
+        flatShading: true
+    });
+
+    for (let i = 0; i < quantidade; i++) {
+        const inimigo = new THREE.Mesh(geometriaInimigo, materialInimigo);
+        inimigo.userData = { morrendo: false, velocidadeX: 0 };
+        reposicionarInimigo(inimigo);
+        scene.add(inimigo);
+        listaInimigos.push(inimigo);
+    }
+}
+
+function reposicionarInimigo(inimigo) {
+    inimigo.scale.set(1, 1, 1);
+    inimigo.rotation.set(0, 0, 0);
+    inimigo.userData.morrendo = false;
+
+    // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa (fog)
+    inimigo.position.z = aviao.position.z - 220 - (Math.random() * 80);
+
+    // Posição X muito mais variada (podem nascer mais perto do centro ou mais nas pontas)
+    const ladoDireito = Math.random() > 0.5;
+    inimigo.position.x = ladoDireito ? (20 + Math.random() * 40) : (-20 - Math.random() * 40);
+
+    // Velocidade aleatória, cruzando o campo de visão
+    inimigo.userData.velocidadeX = (ladoDireito ? -1 : 1) * (0.1 + Math.random() * 0.25);
+
+    // Altura aleatória aproveitando toda a área da mira (10 a 30)
+    inimigo.position.y = 10 + Math.random() * 20;
+}
+
+// FUNÇÕES DE TIRO
+function atirarPlayer() {
+    // Substituindo o Plane (2D) por BoxGeometry (3D) para o tiro ter volume e ser muito mais visível
+    const geometriaTiro = new THREE.BoxGeometry(1.5, 1.5, 6.0);
+    const materialTiro = new THREE.MeshBasicMaterial({color: 0x00ff00});
+    const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
+
+    projetil.position.copy(aviao.position);
+
+    // Calcula a direção em direção ao cubo de mira
+    const direcao = new THREE.Vector3();
+    direcao.subVectors(cuboMira.position, aviao.position).normalize();
+    projetil.userData.direcao = direcao;
+
+    // Como agora é um cubo com profundidade, basta olhar para o alvo (não precisa de rotateX)
+    projetil.lookAt(cuboMira.position);
+
+    scene.add(projetil);
+    listaProjeteisPlayer.push(projetil);
+}
+
+function atirarInimigos() {
+    const geometriaTiro = new THREE.ConeGeometry(0.5, 3, 8);
+    geometriaTiro.rotateX(Math.PI / 2); // Deita o cone
+    const materialTiro = new THREE.MeshBasicMaterial({color: 0xffff00});
+
+    for (let inimigo of listaInimigos) {
+        if (!inimigo.userData.morrendo && inimigo.position.z < camera.position.z) {
+            const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
+            projetil.position.copy(inimigo.position);
+
+            const direcao = new THREE.Vector3();
+            direcao.subVectors(aviao.position, inimigo.position).normalize();
+            projetil.userData.direcao = direcao;
+            projetil.lookAt(aviao.position);
+
+            scene.add(projetil);
+            listaProjeteis.push(projetil);
+        }
+    }
+}
+
+function removerProjetilDaCena(projetil, lista, index) {
+    scene.remove(projetil);
+    if(projetil.geometry) projetil.geometry.dispose();
+    if(projetil.material) projetil.material.dispose();
+    lista.splice(index, 1);
+}
+
+function atualizarInimigos() {
+    for (let inimigo of listaInimigos) {
+        if (inimigo.userData.morrendo) {
+            // Animação de Morte
+            inimigo.scale.multiplyScalar(0.9);
+
+            // Quando fica muito pequeno, renasce no fundo
+            if (inimigo.scale.x < 0.1) {
+                reposicionarInimigo(inimigo);
+            }
+        } else {
+            // Movimento lateral contínuo
+            inimigo.position.x += inimigo.userData.velocidadeX;
+
+            // Movimento na direção contrária do avião
+            inimigo.position.z += (velocidadeDeslocamento * 0.5);
+
+            // Reposiciona ao sair da tela pela lateral ou ficou pra trás da câmera
+            if (inimigo.position.x > 80 || inimigo.position.x < -80 || inimigo.position.z > camera.position.z + 20) {
+                reposicionarInimigo(inimigo);
+            }
         }
     }
 }
