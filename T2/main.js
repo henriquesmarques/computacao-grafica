@@ -18,6 +18,11 @@ let velocidadeDeslocamento = 0.6; // Começa na velocidade 1
 const vetorInterpolacao = new THREE.Vector3();
 const relogio = new THREE.Clock();
 
+// VARIÁVEIS DA COLISÃO
+const bbAviao = new THREE.Box3();
+const bbProjetilAux = new THREE.Box3();
+const bbInimigoAux = new THREE.Box3();
+
 // VARIÁVEIS DO SISTEMA DE COMBATE
 const listaInimigos = [];
 const listaProjeteis = [];
@@ -180,113 +185,134 @@ function retomarSimulacao() {
 
 function renderizar() {
     requestAnimationFrame(renderizar);
-
     const deltaTime = relogio.getDelta();
 
     if (animacaoAtiva) {
-        raycaster.setFromCamera(mouse, camera);
-        raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
+        // Atualização de Posições e Controles
+        atualizarMira();
+        atualizarCamera();
 
-        // Limitação da mira
-        if (cuboMira.position.y < 10) cuboMira.position.y = 10;
-        if (cuboMira.position.y > 40) cuboMira.position.y = 40;
-        if (cuboMira.position.x > 45) cuboMira.position.x = 45;
-        if (cuboMira.position.x < -45) cuboMira.position.x = -45;
-
-        // Movimentação da câmera e do avião
-        aviao.position.z -= velocidadeDeslocamento;
-        cuboMira.position.z -= velocidadeDeslocamento;
-        camera.position.z -= velocidadeDeslocamento;
-        camera.position.x = aviao.position.x;
-        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 30);
-
-        // Limitação da câmera
-        if (camera.position.y < 20) camera.position.y = 20;
-        if (camera.position.x > 5) camera.position.x = 5;
-        if (camera.position.x < -5) camera.position.x = -5;
-
-        // Atualiza a posição da parede invisível
-        paredeInvisivel.constant = -camera.position.z + 65 + 30;
-
+        // Animações e Cenário
         animarAviao();
         atualizarTerreno();
         reposicionarArvores();
         atualizarInimigos();
 
-        // Disparo do Player
-        if (mousePressionado) {
-            tempoDecorridoTiroPlayer += deltaTime;
-            if (tempoDecorridoTiroPlayer >= cadenciaTiroPlayer) {
-                atirarPlayer();
-                tempoDecorridoTiroPlayer = 0;
-            }
-        }
-
-        // Disparo dos Inimigos
-        tempoDecorridoInimigos += deltaTime;
-        if (tempoDecorridoInimigos >= cadenciaTiroInimigos) {
-            atirarInimigos();
-            tempoDecorridoInimigos = 0;
-        }
-
-        // SISTEMA DE COLISÃO
-        const bbAviao = new THREE.Box3().setFromObject(aviao);
-
-        // Mover tiros dos INIMIGOS e checar colisão com o PLAYER
-        for (let i = listaProjeteis.length - 1; i >= 0; i--) {
-            const projetil = listaProjeteis[i];
-            projetil.position.addScaledVector(projetil.userData.direcao, 1.5 + (velocidadeDeslocamento * 0.5));
-
-            const bbProjetil = new THREE.Box3().setFromObject(projetil);
-            if (bbProjetil.intersectsBox(bbAviao)) {
-                // Atualização no GUI
-                statusJogo.tirosSofridos++;
-
-                removerProjetilDaCena(projetil, listaProjeteis, i);
-                continue;
-            }
-
-            if (projetil.position.distanceTo(aviao.position) > 300) {
-                removerProjetilDaCena(projetil, listaProjeteis, i);
-            }
-        }
-
-        // 5. Mover tiros do PLAYER e checar colisão com INIMIGOS
-        for (let i = listaProjeteisPlayer.length - 1; i >= 0; i--) {
-            const projetil = listaProjeteisPlayer[i];
-            projetil.position.addScaledVector(projetil.userData.direcao, 5.0 + (velocidadeDeslocamento * 0.5));
-
-            let atingiuInimigo = false;
-
-            // Cria a Bounding Box base e expande artificialmente em 2.5 unidades para todos os lados.
-            // Isso compensa a falta de volume 3D do plano e cria uma Hitbox generosa!
-            const bbProjetilPlayer = new THREE.Box3().setFromObject(projetil).expandByScalar(2.5);
-
-            for (let j = 0; j < listaInimigos.length; j++) {
-                const inimigo = listaInimigos[j];
-                if (inimigo.userData.morrendo) continue;
-
-                const bbInimigo = new THREE.Box3().setFromObject(inimigo);
-
-                // Inimigo Sofreu Dano
-                if (bbProjetilPlayer.intersectsBox(bbInimigo)) {
-                    atingiuInimigo = true;
-                    inimigo.userData.morrendo = true; // Inicia animação de queda
-                    removerProjetilDaCena(projetil, listaProjeteisPlayer, i);
-                    break;
-                }
-            }
-
-            if (atingiuInimigo) continue;
-
-            if (projetil.position.distanceTo(aviao.position) > 300) {
-                removerProjetilDaCena(projetil, listaProjeteisPlayer, i);
-            }
-        }
+        // Sistema de Combate
+        gerenciarDisparos(deltaTime);
+        gerenciarColisoes();
     }
 
     status.update();
     renderer.render(scene, camera);
+}
+
+function atualizarMira() {
+    raycaster.setFromCamera(mouse, camera);
+    raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
+
+    // Limitação espacial da mira na tela
+    if (cuboMira.position.y < 10) cuboMira.position.y = 10;
+    if (cuboMira.position.y > 40) cuboMira.position.y = 40;
+    if (cuboMira.position.x > 45) cuboMira.position.x = 45;
+    if (cuboMira.position.x < -45) cuboMira.position.x = -45;
+}
+
+function atualizarCamera() {
+    // Movimentação para frente
+    aviao.position.z -= velocidadeDeslocamento;
+    cuboMira.position.z -= velocidadeDeslocamento;
+    camera.position.z -= velocidadeDeslocamento;
+
+    // Câmera acompanha o eixo X do avião
+    camera.position.x = aviao.position.x;
+    camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 30);
+
+    // Limitação da câmera
+    if (camera.position.y < 20) camera.position.y = 20;
+    if (camera.position.x > 5) camera.position.x = 5;
+    if (camera.position.x < -5) camera.position.x = -5;
+
+    // Atualiza a posição da parede invisível do raycaster
+    paredeInvisivel.constant = -camera.position.z + 65 + 30;
+}
+
+function gerenciarDisparos(deltaTime) {
+    // Cadência de disparo do Player
+    if (mousePressionado) {
+        tempoDecorridoTiroPlayer += deltaTime;
+        if (tempoDecorridoTiroPlayer >= cadenciaTiroPlayer) {
+            atirarPlayer();
+            tempoDecorridoTiroPlayer = 0;
+        }
+    }
+
+    // Cadência de disparo dos Inimigos
+    tempoDecorridoInimigos += deltaTime;
+    if (tempoDecorridoInimigos >= cadenciaTiroInimigos) {
+        atirarInimigos();
+        tempoDecorridoInimigos = 0;
+    }
+}
+
+function gerenciarColisoes() {
+    // Atualiza a Bounding Box principal do avião apenas 1 vez por frame
+    bbAviao.setFromObject(aviao);
+
+    verificarDanoNoPlayer();
+    verificarDanoNosInimigos();
+}
+
+function verificarDanoNoPlayer() {
+    for (let i = listaProjeteis.length - 1; i >= 0; i--) {
+        const projetil = listaProjeteis[i];
+        projetil.position.addScaledVector(projetil.userData.direcao, 1.5 + (velocidadeDeslocamento * 0.5));
+
+        bbProjetilAux.setFromObject(projetil);
+
+        if (bbProjetilAux.intersectsBox(bbAviao)) {
+            statusJogo.tirosSofridos++; // Atualiza automaticamente no GUI
+            removerProjetilDaCena(projetil, listaProjeteis, i);
+            continue;
+        }
+
+        // Limpa projéteis muito distantes para poupar memória
+        if (projetil.position.distanceTo(aviao.position) > 300) {
+            removerProjetilDaCena(projetil, listaProjeteis, i);
+        }
+    }
+}
+
+function verificarDanoNosInimigos() {
+    for (let i = listaProjeteisPlayer.length - 1; i >= 0; i--) {
+        const projetil = listaProjeteisPlayer[i];
+        projetil.position.addScaledVector(projetil.userData.direcao, 5.0 + (velocidadeDeslocamento * 0.5));
+
+        let atingiuInimigo = false;
+        // Atualiza Box e expande artificialmente para criar uma Hitbox mais generosa
+        bbProjetilAux.setFromObject(projetil).expandByScalar(2.5);
+
+        for (let j = 0; j < listaInimigos.length; j++) {
+            const inimigo = listaInimigos[j];
+            if (inimigo.userData.morrendo) continue;
+
+            bbInimigoAux.setFromObject(inimigo);
+
+            if (bbProjetilAux.intersectsBox(bbInimigoAux)) {
+                atingiuInimigo = true;
+                inimigo.userData.morrendo = true; // Inicia animação de queda
+                removerProjetilDaCena(projetil, listaProjeteisPlayer, i);
+                break;
+            }
+        }
+
+        if (atingiuInimigo) continue;
+
+        // Limpa projéteis distantes
+        if (projetil.position.distanceTo(aviao.position) > 300) {
+            removerProjetilDaCena(projetil, listaProjeteisPlayer, i);
+        }
+    }
 }
 
 function animarAviao() {
@@ -302,20 +328,20 @@ function animarAviao() {
     // Subida do avião
     // Calcula a diferença vertical entre a mira e o avião
     const diferencaY = pontoDestino.y - aviao.position.y;
-    
-    // Multiplicamos por 0.04 para a inclinação suave
+
+    // Multiplicado por 0.04 para a inclinação suave
     let desvioX = diferencaY * 0.02;
 
     // Trava para o bico não inclinar excessivamente
     if (desvioX > 0.3) desvioX = 0.3;
     if (desvioX < -0.3) desvioX = -0.3;
 
-    // Somar ao -Math.PI / 2 faz a frente do avião levantar quando a mira está acima 
+    // Somar ao -Math.PI / 2 faz a frente do avião levantar quando a mira está acima
     const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
 
     // Suaviza a rotação em X para acompanhar o movimento suavemente
     aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
-    
+
     helice.rotation.y += Math.PI / 10;
 }
 
@@ -396,7 +422,6 @@ function reposicionarInimigo(inimigo) {
 
 // FUNÇÕES DE TIRO
 function atirarPlayer() {
-    // Substituindo o Plane (2D) por BoxGeometry (3D) para o tiro ter volume e ser muito mais visível
     const geometriaTiro = new THREE.BoxGeometry(1.5, 1.5, 6.0);
     const materialTiro = new THREE.MeshBasicMaterial({color: 0x00ff00});
     const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
@@ -408,7 +433,6 @@ function atirarPlayer() {
     direcao.subVectors(cuboMira.position, aviao.position).normalize();
     projetil.userData.direcao = direcao;
 
-    // Como agora é um cubo com profundidade, basta olhar para o alvo (não precisa de rotateX)
     projetil.lookAt(cuboMira.position);
 
     scene.add(projetil);
