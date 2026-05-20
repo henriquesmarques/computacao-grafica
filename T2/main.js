@@ -278,10 +278,11 @@ function renderizar() {
         raycaster.setFromCamera(mouse, camera);
         raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
+        //Atualiza limite da mira
         if (cuboMira.position.y < 10) cuboMira.position.y = 10;
-        if (cuboMira.position.y > 30) cuboMira.position.y = 30;
-        if (cuboMira.position.x > 40) cuboMira.position.x = 40;
-        if (cuboMira.position.x < -40) cuboMira.position.x = -40;
+        if (cuboMira.position.y > 40) cuboMira.position.y = 40;
+        if (cuboMira.position.x > 45) cuboMira.position.x = 45;
+        if (cuboMira.position.x < -45) cuboMira.position.x = -45;
 
         aviao.position.z -= velocidadeDeslocamento;
         cuboMira.position.z -= velocidadeDeslocamento;
@@ -417,6 +418,23 @@ function animarAviao() {
     const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.03;
     aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
 
+    // Subida do avião
+    // Calcula a diferença vertical entre a mira e o avião
+    const diferencaY = pontoDestino.y - aviao.position.y;
+    
+    // Multiplicamos por 0.04 para a inclinação suave
+    let desvioX = diferencaY * 0.02;
+
+    // Trava para o bico não inclinar excessivamente
+    if (desvioX > 0.3) desvioX = 0.3;
+    if (desvioX < -0.3) desvioX = -0.3;
+
+    // Somar ao -Math.PI / 2 faz a frente do avião levantar quando a mira está acima 
+    const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
+
+    // Suaviza a rotação em X para acompanhar o movimento suavemente
+    aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
+    
     helice.rotation.y += Math.PI / 10;
 }
 
