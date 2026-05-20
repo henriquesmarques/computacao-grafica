@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 import {
     initRenderer,
     initCamera,
@@ -8,21 +8,22 @@ import {
 } from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js'
-import {criarAviao, gerarVariasArvores} from "./util.js";
+import {criarAviao, criarArvores, iniciarCamera} from "./util.js";
 
 // VARIÁVEIS GLOBAIS
 const scene = new THREE.Scene();
 const renderer = initRenderer();
 let animationOn = true; // Controla se a animação está ativa
-let valorFOG = 100;
+let valorFOG = 125;
 const velocidade = 0.6; // Velocidade constante
+const distanciaMinima = 10;
 const alvoLerp = new THREE.Vector3();
 
 // ILUMINAÇÃO
 initDefaultBasicLight(scene);
 
 // CÂMERA
-const camera = initCamera(new THREE.Vector3(0, 20, -45));
+const camera = iniciarCamera(new THREE.Vector3(0, 25, -30));
 scene.add(camera);
 
 // Escuta mudanças no tamanho da janela
@@ -39,9 +40,9 @@ renderer.setClearColor(baseColor);
 const stats = new Stats();
 document.getElementById("webgl-output").appendChild(stats.domElement);
 
-// PLANO
-const comprimentoPlano = 200;
-const larguraPlano = 400;
+// PLANOS
+const comprimentoPlano = 250;
+const larguraPlano = 450;
 
 // Plano A
 const planoA = createGroundPlaneWired(larguraPlano, comprimentoPlano);
@@ -58,25 +59,29 @@ let listaPlanos = [planoA, planoB];
 
 // ÁRVORES
 // Adicionado as árvores nos planos
-const arvoresA = gerarVariasArvores(comprimentoPlano, larguraPlano);
+const arvoresA = criarArvores(comprimentoPlano, larguraPlano, 50);
+const arvoresB = criarArvores(comprimentoPlano, larguraPlano, 50);
 planoA.add(...arvoresA);
-const arvoresB = gerarVariasArvores(comprimentoPlano, larguraPlano);
 planoB.add(...arvoresB);
+reposicionarArvoresPlano(planoA, distanciaMinima);
+reposicionarArvoresPlano(planoB, distanciaMinima);
 
 // CUBO DE MIRA
-const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+const cubeGeometry = new THREE.BoxGeometry(5, 5, 5);
 // Criando material do cubo somente com as arestas
 const materialCube = new THREE.MeshBasicMaterial({
     color: 0x00ff00,
     wireframe: true,
     wireframeLinewidth: 1
 });
-const cube = new THREE.Mesh(cubeGeometry, materialCube)
-cube.position.set(0, 10, -65);
-scene.add(cube);
+const mira = new THREE.Mesh(cubeGeometry, materialCube)
+mira.position.set(0, 10, -65);
+scene.add(mira);
 
 // AVIÃO
-const aviao = criarAviao();
+const objeto = criarAviao();
+const aviao = objeto.corpo;
+const helice = objeto.helice;
 // Deita o avião para apontar para frente e gira para ficar de barriga para baixo
 aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
 aviao.position.set(0, 10, -90); // Avião inicia em Z -90
@@ -87,32 +92,17 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 // Criação da "parede invisível"
-// O número 20 é a distância inversa, o que significa que ela fica cravada em Z = -65.
+// O segundo parâmetro é a distância inversa, o que significa que ela fica cravada em Z = -65.
 const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 65);
 
 window.addEventListener('mousemove', function (event) {
     // Normaliza a posição do mouse (de -1 a 1)
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    // Dispara o laser da câmera passando pelo mouse
-    raycaster.setFromCamera(mouse, camera);
-
-    // Se a animação estiver ligada, descobre onde o laser bateu na parede invisível
-    if (animationOn) {
-        raycaster.ray.intersectPlane(paredeInvisivel, cube.position);
-
-        // Limitando o movimento do cubo para não ir para baixo do plano
-        if (cube.position.y < 1.0) cube.position.y = 1.0;
-        if (cube.position.y > 40.0) cube.position.y = 40.0; // Limite superior
-        if (cube.position.x > 70.0) cube.position.x = 70.0; // Limite lateral
-        if (cube.position.x < -70.0) cube.position.x = -70.0;
-    }
 }, false);
 
 buildInterface();
 render();
-
 
 
 function buildInterface() {
@@ -132,8 +122,8 @@ function buildInterface() {
     // Interface
     const gui = new GUI();
     gui.add(controls, 'onChangeAnimation', true).name("Animation On/Off");
-    gui.add(controls, 'fog', 10, 200)
-        .onChange(function (e) {
+    gui.add(controls, 'fog', 50, 200)
+        .onChange(function () {
             controls.changeFOG()
         })
         .name("Change FOG");
@@ -142,21 +132,35 @@ function buildInterface() {
 function render() {
     requestAnimationFrame(render);
     if (animationOn) {
-        // Movimento constante em sentido negativo
+        // Atualiza a posição da mira baseada no mouse
+        raycaster.setFromCamera(mouse, camera);
+        raycaster.ray.intersectPlane(paredeInvisivel, mira.position);
+
+        // Limitando o movimento do cubo para não ir para baixo do plano
+        if (mira.position.y < 10) mira.position.y = 10;
+        if (mira.position.y > 30) mira.position.y = 30; // Limite superior
+        if (mira.position.x > 30) mira.position.x = 30; // Limite lateral
+        if (mira.position.x < -30) mira.position.x = -30;
+
+        // Movimento em Z constante e em sentido negativo
         aviao.position.z -= velocidade;
-        cube.position.z -= velocidade;
+        mira.position.z -= velocidade;
+
         camera.position.z -= velocidade;
+        camera.position.x = aviao.position.x;
+        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 30);
+        if (camera.position.y > 15) camera.position.y = 15; // Limite superior
+        if (camera.position.x > 5) camera.position.x = 5; // Limite lateral
+        if (camera.position.x < -5) camera.position.x = -5;
 
         // Parede precisa se manter à mesma distância da câmera
-        paredeInvisivel.constant += velocidade;
+        paredeInvisivel.constant = -camera.position.z + 65 + 30;
 
         // Chama a função mover avião
         moverAviao();
 
         // Chama a função para reutilizar os planos
         reposicionarPlano();
-
-        camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 50);
     }
     stats.update();
     moverAviao();
@@ -166,18 +170,21 @@ function render() {
 function moverAviao() {
     if (!animationOn) return;
 
-    const pontoAlvo = cube.position;
+    const pontoAlvo = mira.position;
 
     // Pega X e Y da mira, mas mantém o Z do avião
     alvoLerp.set(pontoAlvo.x, pontoAlvo.y, aviao.position.z);
-    aviao.position.lerp(alvoLerp, 0.05);
+    aviao.position.lerp(alvoLerp, 0.02);
 
     // Inclinação da Asa
     // Somamos Math.PI para virar o avião de cabeça para cima
-    const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * 0.06;
+    const inclinacaoAlvo = Math.PI + (pontoAlvo.x - aviao.position.x) * 0.03;
 
     // Aplica a rotação de forma suave no eixo Y
     aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
+
+    // Adiciona movimentação a hélice
+    helice.rotation.y += Math.PI / 10;
 }
 
 // Utilizando efeito de esteira infinita
@@ -192,30 +199,49 @@ function reposicionarPlano() {
             // Move o plano após o último plano visível
             plano.position.z -= listaPlanos.length * comprimentoPlano;
             // Chama a função para mudar as árvores de lugar
-            reposicionarArvoresPlano(plano);
+            reposicionarArvoresPlano(plano, distanciaMinima);
         }
     }
 }
 
-function reposicionarArvoresPlano(plano) {
-    let vetorDeArvores;
+function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
+    const arvores = plano === planoA ? arvoresA : arvoresB;
+    const posicoesAprovadas = [];
+    const distanciaMinima2 = distanciaMinima * distanciaMinima; // comparar distâncias ao quadrado evita sqrt
 
-    // Verificando qual o plano
-    if (plano === planoA) {
-        vetorDeArvores = arvoresA;
-    } else if (plano === planoB) {
-        vetorDeArvores = arvoresB;
-    }
+    for (const arvore of arvores) {
+        let x, y;
+        let ehValido = false;
+        let tentativas = 0;
+        const maxTentativas = 50;
 
-    // Percorrendo o vetor de árvores
-    for (let i = 0; i < vetorDeArvores.length; i++) {
-        const arvore = vetorDeArvores[i];
+        do {
+            x = (Math.random() - 0.5) * larguraPlano;
+            y = (Math.random() - 0.5) * comprimentoPlano - 100;
 
-        // Sorteia novas posições
-        let x = (Math.random() - 0.5) * larguraPlano;
-        const y = (Math.random() - 0.5) * comprimentoPlano;
+            ehValido = true; // assumimos válida até provar o contrário
 
-        // Atualiza a posição no plano
+            for (const pos of posicoesAprovadas) {
+                const dx = x - pos.x;
+                const dy = y - pos.y;
+                const dist2 = dx * dx + dy * dy;
+
+                if (dist2 < distanciaMinima2) {
+                    ehValido = false;
+                    break;
+                }
+            }
+
+            tentativas++;
+        } while (!ehValido && tentativas < maxTentativas);
+
+        if (!ehValido) {
+            console.warn(`reposicionarArvoresPlano: não encontrou posição válida após ${tentativas} tentativas, colocando árvore mesmo assim.`);
+        }
+
+        posicoesAprovadas.push({ x: x, y: y });
+
+        // mantém outras propriedades da árvore (rotations, scale) e apenas altera posição
         arvore.position.set(x, y, 0);
     }
 }
