@@ -19,6 +19,13 @@ export function criarArvore() {
     const cone2 = new THREE.Mesh(coneGeometry2, materialVerde);
     const cone3 = new THREE.Mesh(coneGeometry3, materialVerde);
 
+    cone1.castShadow = false;
+    cone1.receiveShadow = false;
+    cone2.castShadow = false;
+    cone2.receiveShadow = false;
+    cone3.castShadow = false;
+    cone3.receiveShadow = false;
+
     const alturaCilindro = tronco.geometry.parameters.height;
     const alturaCone2 = coneGeometry2.parameters.height;
     const alturaCone3 = coneGeometry3.parameters.height;
@@ -127,22 +134,17 @@ export function criarAviao() {
     };
 }
 
-// Criando função para gerar grupo de árvores
 export function criarArvores(comprimentoPlano, larguraPlano, total) {
     const arvores = []; // Lista para colocar as árvores
 
     for (let i = 0; i < total; i++) {
-        const arvore = criarArvore();
-
-        // Criando posições aleatórias para x e z
-        const x = (Math.random() - 0.5) * larguraPlano;
-        const y = (Math.random() - 0.5) * comprimentoPlano;
-
-        if (Math.abs(x) > 20) {
-            arvore.position.set(x, y, 0);
-            arvores.push(arvore);
-        }
+        // Cria a malha usando a sua função existente
+        const arvore = criarArvore(); 
+        
+        // Adiciona na lista sem definir X ou Z aqui, pois a outra função definirá isso 
+        arvores.push(arvore);
     }
+    
     return arvores;
 }
 
