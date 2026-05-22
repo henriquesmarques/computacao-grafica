@@ -433,6 +433,17 @@ function animarAviao() {
     vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
     aviao.position.lerp(vetorInterpolacao, 0.02);
 
+    const desvioLateral = pontoDestino.x - aviao.position.x; //calcula desvio
+    let inclinacaoZ = desvioLateral * 0.015; //transforma o desvio em angulo de inclinação
+
+    //Trava de segurança para o avião não virar
+    if (inclinacaoZ > 0.35) inclinacaoZ = 0.35;
+    if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
+
+    //Aplica rotação de forma suave
+    const rotacaoAlvoY = Math.PI + inclinacaoZ;
+    aviao.rotation.y += (rotacaoAlvoY - aviao.rotation.y) * 0.1;
+
     const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.03;
     aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
 
@@ -449,7 +460,6 @@ function animarAviao() {
 
     // Somar ao -Math.PI / 2 faz a frente do avião levantar quando a mira está acima
     const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
-
     // Suaviza a rotação em X para acompanhar o movimento suavemente
     aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
 
