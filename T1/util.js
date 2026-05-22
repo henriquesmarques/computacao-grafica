@@ -129,13 +129,6 @@ export function criarAviao() {
 
 // Criando função para gerar grupo de árvores
 export function criarArvores(comprimentoPlano, larguraPlano, total) {
-<<<<<<< HEAD
-    const arvores = []; // Lista para colocar as árvores
-
-    for (let i = 0; i < total; i++) {
-export function gerarVariasArvores(comprimentoPlano, larguraPlano) {
-=======
->>>>>>> c7c2918 (Pequena alteração na câmera)
     const arvores = []; // Lista para colocar as árvores
 
     for (let i = 0; i < total; i++) {

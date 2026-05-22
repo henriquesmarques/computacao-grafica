@@ -9,10 +9,6 @@ import {
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js'
 import {criarAviao, criarArvores, iniciarCamera} from "./util.js";
-<<<<<<< HEAD
-import { criarAviao, gerarVariasArvores } from "./util.js";
-=======
->>>>>>> c7c2918 (Pequena alteração na câmera)
 
 // VARIÁVEIS GLOBAIS
 const scene = new THREE.Scene();
@@ -187,13 +183,8 @@ function moverAviao() {
     // Aplica a rotação de forma suave no eixo Y
     aviao.rotation.y += (inclinacaoAlvo - aviao.rotation.y) * 0.1;
 
-<<<<<<< HEAD
-    helice.rotation.y += Math.PI / 10;
-    helice.rotation.y += Math.PI/10;
-=======
     // Adiciona movimentação a hélice
     helice.rotation.y += Math.PI / 10;
->>>>>>> c7c2918 (Pequena alteração na câmera)
 }
 
 // Utilizando efeito de esteira infinita
@@ -215,29 +206,6 @@ function reposicionarPlano() {
 
 function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
     const arvores = plano === planoA ? arvoresA : arvoresB;
-<<<<<<< HEAD
-    const posicoesAprovadas = [];
-    const distanciaMinima2 = distanciaMinima * distanciaMinima; // comparar distâncias ao quadrado evita sqrt
-
-    for (const arvore of arvores) {
-        let x, y;
-        let ehValido = false;
-        let tentativas = 0;
-        const maxTentativas = 50;
-
-        do {
-            x = (Math.random() - 0.5) * larguraPlano;
-            y = (Math.random() - 0.5) * comprimentoPlano - 100;
-
-            ehValido = true; // assumimos válida até provar o contrário
-    // Verificando qual o plano
-    if (plano === planoA)
-        vetorDeArvores = arvoresA;
-    else if (plano === planoB)
-        vetorDeArvores = arvoresB;
-
-=======
->>>>>>> c7c2918 (Pequena alteração na câmera)
     const posicoesAprovadas = [];
     const distanciaMinima2 = distanciaMinima * distanciaMinima; // comparar distâncias ao quadrado evita sqrt
 
@@ -258,19 +226,6 @@ function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
                 const dy = y - pos.y;
                 const dist2 = dx * dx + dy * dy;
 
-<<<<<<< HEAD
-                // Calcula a distância usando Pitágoras 
-                const distanciaX = x - arvoreAceita.x;
-                const distanciaY = y - arvoreAceita.y;
-                const distanciaReal = Math.sqrt((distanciaX * distanciaX) + (distanciaY * distanciaY));
-
-            for (const pos of posicoesAprovadas) {
-                const dx = x - pos.x;
-                const dy = y - pos.y;
-                const dist2 = dx * dx + dy * dy;
-
-=======
->>>>>>> c7c2918 (Pequena alteração na câmera)
                 if (dist2 < distanciaMinima2) {
                     ehValido = false;
                     break;
@@ -285,22 +240,8 @@ function reposicionarArvoresPlano(plano, distanciaMinima = 10) {
         }
 
         posicoesAprovadas.push({ x: x, y: y });
-<<<<<<< HEAD
-        
-        // Aplica na árvore
-        arvore.position.set(x, y, 0); 
-        // Salva a posição da árvore aceita
-        posicoesAprovadas.push({x: x, y: y});
-=======
->>>>>>> c7c2918 (Pequena alteração na câmera)
 
         // mantém outras propriedades da árvore (rotations, scale) e apenas altera posição
         arvore.position.set(x, y, 0);
     }
-<<<<<<< HEAD
-}
-}
-}
-=======
->>>>>>> c7c2918 (Pequena alteração na câmera)
 }
