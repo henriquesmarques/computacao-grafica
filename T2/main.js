@@ -46,6 +46,7 @@ configurarNevoa();
 // CÂMERA
 const camera = iniciarCamera(new THREE.Vector3(0, 25, -30));
 scene.add(camera);
+calcularLimiteEspacial();
 window.addEventListener('resize', function () {
     onWindowResize(camera, renderer)
 }, false);
@@ -121,6 +122,19 @@ window.addEventListener('keydown', function(event) {
     }
 }, false);
 
+//Responsividade
+window.addEventListener('resize', function () {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    
+    // Atualiza o limite dinamicamente
+    calcularLimiteEspacial();
+
+    if (typeof onWindowResize === 'function') {
+        onWindowResize(camera, renderer);
+    }
+}, false);
 
 // CONFIGURAÇÕES DO TERRENO
 const comprimentoTerreno = 300;
@@ -174,6 +188,34 @@ criarInimigos(2);
 
 construirInterface();
 renderizar();
+
+//Responsividade
+function calcularLimiteEspacial() {
+    //Distância exata da câmera até a parede do Raycaster
+    const distanciaParede = 95; 
+    
+    //Calcula a altura total visível no mundo 
+    const fovRadianos = THREE.MathUtils.degToRad(camera.fov);
+    const alturaVisivel = 2 * Math.tan(fovRadianos / 2) * distanciaParede;
+    
+    //Multiplica pelo aspecto atual da câmera para achar a largura total visível
+    const larguraVisivelTotal = alturaVisivel * camera.aspect;
+    
+    // Diminui a margem padrão para telas normais para a mira colar na borda
+    let margemBorda = 6; 
+    
+    if (camera.aspect < 1.6) {
+        // Para telas estreitas ou quadradas, deixamos quase colado na beirada física
+        margemBorda = 2 + (camera.aspect * 2); 
+    }
+
+    //Define o limite final na metade da largura visível menos a margem calibrada
+    limiteXDinamico = (larguraVisivelTotal / 2) - margemBorda;
+    
+    // Travas de segurança
+    if (limiteXDinamico > 95) limiteXDinamico = 95;
+    if (limiteXDinamico < 25) limiteXDinamico = 25;
+}
 
 function construirInterface() {
     const controlos = new function () {
@@ -282,8 +324,8 @@ function atualizarMira() {
     // Limitação espacial da mira na tela
     if (cuboMira.position.y < 10) cuboMira.position.y = 10;
     if (cuboMira.position.y > 40) cuboMira.position.y = 40;
-    if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = 45;
-    if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -45;
+    if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = limiteXDinamico;
+    if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -limiteXDinamico;
 }
 
 function atualizarCamera() {
