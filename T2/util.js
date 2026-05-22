@@ -47,8 +47,8 @@ export function criarArvore() {
     tronco.add(cone3);
 
     // Alturas variáveis para as árvores
-    const alturaAleatoria = 0.7 + Math.random() * 1.5;
-    tronco.scale.y = alturaAleatoria;
+    const alturaAleatoria = 0.4 + Math.random() * 0.3;
+    tronco.scale.set(alturaAleatoria, alturaAleatoria, alturaAleatoria);
     tronco.position.y = (alturaCilindro * alturaAleatoria) / 2;
 
     return tronco;

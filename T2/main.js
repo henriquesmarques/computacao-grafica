@@ -30,13 +30,13 @@ const listaInimigos = [];
 const listaProjeteis = [];
 const listaProjeteisPlayer = [];
 let tempoDecorridoInimigos = 0;
-const cadenciaTiroInimigos = 1.5;
+const cadenciaTiroInimigos = 1;
 
 let mousePressionado = false;
 let tempoDecorridoTiroPlayer = 0;
 const cadenciaTiroPlayer = 0.15;
 
-const statusJogo = { tirosSofridos: 0 };
+const statusJogo = {tirosSofridos: 0};
 
 // --- TRABALHO 1 ---
 
@@ -92,7 +92,7 @@ window.addEventListener('mousemove', function (event) {
 }, false);
 
 // Eventos de clique para tiro contínuo e retomada de pausa
-window.addEventListener('mousedown', function(event) {
+window.addEventListener('mousedown', function (event) {
     if (!animacaoAtiva) {
         retomarSimulacao();
     } else {
@@ -100,13 +100,13 @@ window.addEventListener('mousedown', function(event) {
     }
 }, false);
 
-window.addEventListener('mouseup', function(event) {
+window.addEventListener('mouseup', function (event) {
     if (event.button === 0) mousePressionado = false;
 }, false);
 
 // CONTROLES DE TECLADO
-window.addEventListener('keydown', function(event) {
-    switch(event.key) {
+window.addEventListener('keydown', function (event) {
+    switch (event.key) {
         case '1':
             velocidadeDeslocamento = 0.6;
             break;
@@ -127,7 +127,7 @@ window.addEventListener('resize', function () {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    
+
     // Atualiza o limite dinamicamente
     calcularLimiteEspacial();
 
@@ -154,8 +154,8 @@ gerarPosicoesArvores();
 const quantidadeArvores = 350;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
 
-listaArvores.forEach((arvore,indice) => {
-    arvore.scale.set(0.4, 0.4, 0.4);
+listaArvores.forEach((arvore, indice) => {
+    // arvore.scale.set(0.4, 0.4, 0.4);
 
     //Iluminação
     //Ativa a sombra na arvore
@@ -169,10 +169,10 @@ listaArvores.forEach((arvore,indice) => {
     // Pega uma das 1000 posições para o X
     const posicaoSorteada = posicoesValidas[indice % posicoesValidas.length];
     arvore.position.x = posicaoSorteada.x;
-    
+
     // Distribui o Z uniformemente desde a câmera até o fundo no início
     arvore.position.z = camera.position.z - (Math.random() * comprimentoTerreno);
-    
+
     // Calcula a altura correta do terreno
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
     scene.add(arvore);
@@ -189,29 +189,56 @@ criarInimigos(2);
 construirInterface();
 renderizar();
 
+function renderizar() {
+    requestAnimationFrame(renderizar);
+    const deltaTime = relogio.getDelta();
+
+    if (animacaoAtiva) {
+        // Atualização de Posições e Controles
+        atualizarMira();
+        atualizarCamera();
+
+        // Animações e Cenário
+        animarAviao();
+        atualizarTerreno();
+        reposicionarArvores();
+        atualizarInimigos();
+
+        //Iluminação
+        gerenciarIluminacao();
+
+        // Sistema de Combate
+        gerenciarDisparos(deltaTime);
+        gerenciarColisoes();
+    }
+
+    status.update();
+    renderer.render(scene, camera);
+}
+
 //Responsividade
 function calcularLimiteEspacial() {
     //Distância exata da câmera até a parede do Raycaster
-    const distanciaParede = 95; 
-    
+    const distanciaParede = 95;
+
     //Calcula a altura total visível no mundo 
     const fovRadianos = THREE.MathUtils.degToRad(camera.fov);
     const alturaVisivel = 2 * Math.tan(fovRadianos / 2) * distanciaParede;
-    
+
     //Multiplica pelo aspecto atual da câmera para achar a largura total visível
     const larguraVisivelTotal = alturaVisivel * camera.aspect;
-    
+
     // Diminui a margem padrão para telas normais para a mira colar na borda
-    let margemBorda = 6; 
-    
+    let margemBorda = 6;
+
     if (camera.aspect < 1.6) {
         // Para telas estreitas ou quadradas, deixamos quase colado na beirada física
-        margemBorda = 2 + (camera.aspect * 2); 
+        margemBorda = 2 + (camera.aspect * 2);
     }
 
     //Define o limite final na metade da largura visível menos a margem calibrada
     limiteXDinamico = (larguraVisivelTotal / 2) - margemBorda;
-    
+
     // Travas de segurança
     if (limiteXDinamico > 95) limiteXDinamico = 95;
     if (limiteXDinamico < 25) limiteXDinamico = 25;
@@ -251,7 +278,7 @@ function retomarSimulacao() {
 }
 
 //Iluminação
-function gerenciarIluminacao(){
+function gerenciarIluminacao() {
     // Cria as luzes apenas na primeira execução
     if (!luzDirecional) {
         luzDirecional = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -260,9 +287,9 @@ function gerenciarIluminacao(){
         // Resolução equilibrada 
         luzDirecional.shadow.mapSize.width = 2048;
         luzDirecional.shadow.mapSize.height = 2048;
-        
+
         // Evita artefatos e sombras piscando
-        luzDirecional.shadow.bias = -0.0005; 
+        luzDirecional.shadow.bias = -0.0005;
 
         //Adiciona na cena
         scene.add(luzDirecional);
@@ -275,46 +302,19 @@ function gerenciarIluminacao(){
     luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
 
     // Volume adaptativo em relação ao fog
-    const distanciaFog = scene.fog ? scene.fog.far : 200; 
-    
+    const distanciaFog = scene.fog ? scene.fog.far : 200;
+
     luzDirecional.shadow.camera.near = 0.5;
-    luzDirecional.shadow.camera.far = distanciaFog; 
-    
+    luzDirecional.shadow.camera.far = distanciaFog;
+
     // Proporção para cobrir o campo de visão visível
-    const d = distanciaFog * 0.4; 
+    const d = distanciaFog * 0.4;
     luzDirecional.shadow.camera.left = -d;
     luzDirecional.shadow.camera.right = d;
     luzDirecional.shadow.camera.top = d;
     luzDirecional.shadow.camera.bottom = -d;
 
     luzDirecional.shadow.camera.updateProjectionMatrix();
-}
-
-function renderizar() {
-    requestAnimationFrame(renderizar);
-    const deltaTime = relogio.getDelta();
-
-    if (animacaoAtiva) {
-        // Atualização de Posições e Controles
-        atualizarMira();
-        atualizarCamera();
-
-        // Animações e Cenário
-        animarAviao();
-        atualizarTerreno();
-        reposicionarArvores();
-        atualizarInimigos();
-
-        //Iluminação
-        gerenciarIluminacao();
-
-        // Sistema de Combate
-        gerenciarDisparos(deltaTime);
-        gerenciarColisoes();
-    }
-
-    status.update();
-    renderer.render(scene, camera);
 }
 
 function atualizarMira() {
@@ -496,7 +496,7 @@ function atualizarTerreno() {
 }
 
 function gerarPosicoesArvores() {
-    const distanciaMinima = 16;
+    const distanciaMinima = 80;
     const tentativasMaximas = 15000; // Mais tentativas para garantir as 1000 posições
     let tentativas = 0;
 
@@ -505,10 +505,10 @@ function gerarPosicoesArvores() {
 
         // Sorteia X e Z baseados nos tamanhos do seu terreno
         const x = (Math.random() - 0.5) * larguraTerreno;
-        // O Z mapeia todo o comprimento do terreno 
-        const z = (Math.random() - 0.5) * comprimentoTerreno; 
+        // O Z mapeia todo o comprimento do terreno
+        const z = (Math.random() - 0.5) * comprimentoTerreno;
 
-        // Verifica se está muito perto de alguma posição já salva 
+        // Verifica se está muito perto de alguma posição já salva
         let muitoPerto = false;
         for (let pos of posicoesValidas) {
             const dx = x - pos.x;
@@ -519,25 +519,27 @@ function gerarPosicoesArvores() {
             }
         }
 
-        // Se a posição for válida, guarda no vetor 
+        // Se a posição for válida, guarda no vetor
         if (!muitoPerto) {
-            posicoesValidas.push(new THREE.Vector2(x, z)); 
+            posicoesValidas.push(new THREE.Vector2(x, z));
         }
     }
+
+    console.log(tentativas);
 }
 
 function reposicionarArvores() {
     for (let arvore of listaArvores) {
         // Se a árvore ficou para trás da câmera
         if (arvore.position.z > camera.position.z + 20) {
-            
+
             //Sorteia um índice aleatório das 1000 posições 
             const indiceAleatorio = Math.floor(Math.random() * posicoesValidas.length);
             const posicaoSegura = posicoesValidas[indiceAleatorio];
-            
+
             arvore.position.x = posicaoSegura.x;
             arvore.position.z -= comprimentoTerreno;
-            
+
             //Ajusta a altura da montanha para a nova coordenada
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
         }
@@ -554,7 +556,7 @@ function criarInimigos(quantidade) {
 
     for (let i = 0; i < quantidade; i++) {
         const inimigo = new THREE.Mesh(geometriaInimigo, materialInimigo);
-        inimigo.userData = { morrendo: false, velocidadeX: 0 };
+        inimigo.userData = {morrendo: false, velocidadeX: 0};
         reposicionarInimigo(inimigo);
         scene.add(inimigo);
         listaInimigos.push(inimigo);
@@ -593,9 +595,6 @@ function atualizarInimigos() {
         } else {
             // Movimento lateral contínuo
             inimigo.position.x += inimigo.userData.velocidadeX;
-
-            // Movimento na direção contrária do avião
-            inimigo.position.z += (velocidadeDeslocamento * 0.5);
 
             // Reposiciona ao sair da tela pela lateral ou ficou pra trás da câmera
             if (inimigo.position.x > 80 || inimigo.position.x < -80 || inimigo.position.z > camera.position.z + 20) {
@@ -647,7 +646,7 @@ function atirarInimigos() {
 
 function removerProjetilDaCena(projetil, lista, index) {
     scene.remove(projetil);
-    if(projetil.geometry) projetil.geometry.dispose();
-    if(projetil.material) projetil.material.dispose();
+    if (projetil.geometry) projetil.geometry.dispose();
+    if (projetil.material) projetil.material.dispose();
     lista.splice(index, 1);
 }
