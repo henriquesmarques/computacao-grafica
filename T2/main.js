@@ -18,6 +18,7 @@ let velocidadeDeslocamento = 0.6; // Começa na velocidade 1
 const vetorInterpolacao = new THREE.Vector3();
 const relogio = new THREE.Clock();
 let limiteXDinamico = 45; // Valor padrão inicial
+const posicoesValidas = [];
 
 // VARIÁVEIS DA COLISÃO
 const bbAviao = new THREE.Box3();
@@ -120,6 +121,7 @@ window.addEventListener('keydown', function(event) {
     }
 }, false);
 
+
 // CONFIGURAÇÕES DO TERRENO
 const comprimentoTerreno = 300;
 const larguraTerreno = 450;
@@ -131,11 +133,14 @@ planoTerreno.rotation.x = -Math.PI / 2;
 planoTerreno.receiveShadow = true; //permitir sombra no terreno
 scene.add(planoTerreno);
 
+//Cria as posições validas
+gerarPosicoesArvores();
+
 // ÁRVORES
 const quantidadeArvores = 350;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
 
-listaArvores.forEach(arvore => {
+listaArvores.forEach((arvore,indice) => {
     arvore.scale.set(0.4, 0.4, 0.4);
 
     //Iluminação
@@ -147,17 +152,22 @@ listaArvores.forEach(arvore => {
         }
     });
 
-    scene.add(arvore);
-    arvore.position.x = (Math.random() - 0.5) * larguraTerreno;
-    arvore.position.z = camera.position.z - Math.random() * comprimentoTerreno;
+    // Pega uma das 1000 posições para o X
+    const posicaoSorteada = posicoesValidas[indice % posicoesValidas.length];
+    arvore.position.x = posicaoSorteada.x;
+    
+    // Distribui o Z uniformemente desde a câmera até o fundo no início
+    arvore.position.z = camera.position.z - (Math.random() * comprimentoTerreno);
+    
+    // Calcula a altura correta do terreno
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+    scene.add(arvore);
 });
 
 // ILUMINAÇÃO
 initDefaultBasicLight(scene);
 //Criando iluminação direcional
 let luzDirecional;
-
 
 // INIMIGOS
 criarInimigos(2);
@@ -433,16 +443,54 @@ function atualizarTerreno() {
     geometriaPlano.computeVertexNormals();
 }
 
-function reposicionarArvores() {
-    for (let arvore of listaArvores) {
-        if (arvore.position.z > camera.position.z + 20) {
-            arvore.position.z -= comprimentoTerreno;
-            arvore.position.x = (Math.random() - 0.5) * larguraTerreno;
-            arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+function gerarPosicoesArvores() {
+    const distanciaMinima = 16;
+    const tentativasMaximas = 15000; // Mais tentativas para garantir as 1000 posições
+    let tentativas = 0;
+
+    while (posicoesValidas.length < 1000 && tentativas < tentativasMaximas) {
+        tentativas++;
+
+        // Sorteia X e Z baseados nos tamanhos do seu terreno
+        const x = (Math.random() - 0.5) * larguraTerreno;
+        // O Z mapeia todo o comprimento do terreno 
+        const z = (Math.random() - 0.5) * comprimentoTerreno; 
+
+        // Verifica se está muito perto de alguma posição já salva 
+        let muitoPerto = false;
+        for (let pos of posicoesValidas) {
+            const dx = x - pos.x;
+            const dz = z - pos.z;
+            if (Math.sqrt(dx * dx + dz * dz) < distanciaMinima) {
+                muitoPerto = true;
+                break;
+            }
+        }
+
+        // Se a posição for válida, guarda no vetor 
+        if (!muitoPerto) {
+            posicoesValidas.push(new THREE.Vector2(x, z)); 
         }
     }
 }
 
+function reposicionarArvores() {
+    for (let arvore of listaArvores) {
+        // Se a árvore ficou para trás da câmera
+        if (arvore.position.z > camera.position.z + 20) {
+            
+            //Sorteia um índice aleatório das 1000 posições 
+            const indiceAleatorio = Math.floor(Math.random() * posicoesValidas.length);
+            const posicaoSegura = posicoesValidas[indiceAleatorio];
+            
+            arvore.position.x = posicaoSegura.x;
+            arvore.position.z -= comprimentoTerreno;
+            
+            //Ajusta a altura da montanha para a nova coordenada
+            arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+        }
+    }
+}
 
 // INIMIGOS
 function criarInimigos(quantidade) {
