@@ -2,6 +2,7 @@ import * as THREE from "three";
 import {initRenderer, initDefaultBasicLight, onWindowResize} from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js';
+import { GLTFLoader } from '../build/jsm/loaders/GLTFLoader.js';
 import {
     criarAviao,
     criarArvores,
@@ -184,7 +185,26 @@ initDefaultBasicLight(scene);
 let luzDirecional;
 
 // INIMIGOS
-criarInimigos(2);
+let modeloInimigoBase = null;
+const escalaOriginalInimigo = 2.0; // Altere se o modelo for gigante ou minúsculo
+
+const loader = new GLTFLoader();
+loader.load('./assets/drone.glb', function (gltf) {
+    modeloInimigoBase = gltf.scene;
+
+    // Ativa as sombras em todas as partes da malha do drone
+    modeloInimigoBase.traverse(function (child) {
+        if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+        }
+    });
+
+    // Só cria os inimigos depois do modelo carregar
+    criarInimigos(2);
+}, undefined, function (error) {
+    console.error('Erro ao carregar o modelo do drone:', error);
+});
 
 construirInterface();
 renderizar();
@@ -548,14 +568,11 @@ function reposicionarArvores() {
 
 // INIMIGOS
 function criarInimigos(quantidade) {
-    const geometriaInimigo = new THREE.IcosahedronGeometry(4, 0);
-    const materialInimigo = new THREE.MeshLambertMaterial({
-        color: 0xaa0000,
-        flatShading: true
-    });
+    if (!modeloInimigoBase) return; // Segurança caso o modelo ainda não tenha carregado
 
     for (let i = 0; i < quantidade; i++) {
-        const inimigo = new THREE.Mesh(geometriaInimigo, materialInimigo);
+        // Clona o modelo carregado para cada inimigo
+        const inimigo = modeloInimigoBase.clone();
         inimigo.userData = {morrendo: false, velocidadeX: 0};
         reposicionarInimigo(inimigo);
         scene.add(inimigo);
@@ -564,8 +581,9 @@ function criarInimigos(quantidade) {
 }
 
 function reposicionarInimigo(inimigo) {
-    inimigo.scale.set(1, 1, 1);
-    inimigo.rotation.set(0, 0, 0);
+    // Retorna para a escala inicial a cada respawn
+    inimigo.scale.set(escalaOriginalInimigo, escalaOriginalInimigo, escalaOriginalInimigo);
+    inimigo.rotation.set(0, Math.PI * 1.5, 0);
     inimigo.userData.morrendo = false;
 
     // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa (fog)
