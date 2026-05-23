@@ -156,8 +156,6 @@ gerarPosicoesArvores();
 const quantidadeArvores = 350;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
 
-
-
 listaArvores.forEach((arvore, indice) => {
     arvore.traverse(child => {
         if (child.isMesh) {
@@ -166,21 +164,19 @@ listaArvores.forEach((arvore, indice) => {
         }
     });
 
-    let meuIndiceExclusivo;
+    let indice;
 
-    // TRAVA DE SEGURANÇA: Se ainda houver índices no pool, retira um exclusivo
+    // Trava 
     if (indicesPosicoesLivres.length > 0) {
-        meuIndiceExclusivo = indicesPosicoesLivres.pop();
+        indice = indicesPosicoesLivres.pop();
     } else {
-        // Se o pool acabar (gerou menos de 350 posições), reaproveita usando o resto da divisão
-        meuIndiceExclusivo = indice % posicoesValidas.length;
+        indice = indice % posicoesValidas.length;
     }
 
-    arvore.userData.indicePosicao = meuIndiceExclusivo; // Guarda o índice nela para lembrar depois
+    arvore.userData.indicePosicao = indice; 
 
-    const pontoSorteado = posicoesValidas[meuIndiceExclusivo];
-    
-    // Agora o pontoSorteado NUNCA será undefined
+    const pontoSorteado = posicoesValidas[indice];
+
     arvore.position.x = pontoSorteado.x;
     arvore.position.z = camera.position.z - (pontoSorteado.y + (comprimentoTerreno / 2));
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
