@@ -16,11 +16,11 @@ const renderer = initRenderer();
 let animacaoAtiva = true;
 let valorNevoa = 200;
 let velocidadeDeslocamento = 0.6; // Começa na velocidade 1
-const vetorInterpolacao = new THREE.Vector3();
-const relogio = new THREE.Clock();
+const vetorInterpolacao = new THREE.Vector3(); // Cache para evitar recriar vetores no loop
+const relogio = new THREE.Clock(); // Mantém o tempo independente do FPS do monitor
 let limiteXDinamico; // Valor padrão inicial
 const posicoesValidas = []; // vetor de posições das arvores
-let indicesPosicoesLivres = []; //posição livre para sorteio
+let indicesPosicoesLivres = []; // posição livre para sorteio
 let luzDirecional;
 
 // VARIÁVEIS DA COLISÃO
@@ -47,7 +47,10 @@ configurarNevoa();
 // CÂMERA
 const camera = iniciarCamera(new THREE.Vector3(0, 25, -30));
 scene.add(camera);
+
+// Limita o movimento da mira dependendo da proporção da tela
 limiteXDinamico = Math.max(25, Math.min(55, (window.innerWidth / window.innerHeight) * 24));
+
 window.addEventListener('resize', function () {
     onWindowResize(camera, renderer)
 }, false);
@@ -60,6 +63,8 @@ document.getElementById("webgl-output").appendChild(status.domElement);
 const objetoAviao = criarAviao();
 const aviao = objetoAviao.corpo;
 const helice = objetoAviao.helice;
+
+// Deita o avião para ficar paralelo ao chão e de frente pra tela
 aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
 aviao.position.set(0, 10, -90);
 scene.add(aviao);
@@ -82,9 +87,9 @@ document.body.style.cursor = 'none';
 renderer.domElement.style.cursor = 'none';
 
 // INTERAÇÃO COM RAYCASTER
-const raycaster = new THREE.Raycaster();
+const raycaster = new THREE.Raycaster(); // Lança um raio 3D a partir do mouse
 const mouse = new THREE.Vector2();
-const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 65);
+const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 65); // Plano onde a mira desliza
 
 window.addEventListener('mousemove', function (event) {
     // Normaliza a posição do mouse (de -1 a 1)
@@ -123,12 +128,12 @@ window.addEventListener('keydown', function (event) {
     }
 }, false);
 
-//Responsividade
+// Responsividade
 window.addEventListener('resize', function () {
-    //Atualiza o aspecto da câmera
+    // Atualiza o aspecto da câmera
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    //Atualiza o tamanho do renderizador
+    // Atualiza o tamanho do renderizador
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     // Calcula o limiteXDinamico no início do jogo
@@ -147,15 +152,17 @@ window.addEventListener('resize', function () {
 // CONFIGURAÇÕES DO TERRENO
 const comprimentoTerreno = 300;
 const larguraTerreno = 450;
-const segmentosTerreno = 128;
+const segmentosTerreno = 128; // Resolução da malha do chão
 const geometriaPlano = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerreno, segmentosTerreno, segmentosTerreno);
 const materialPlano = new THREE.MeshLambertMaterial({color: "darkgreen"});
 const planoTerreno = new THREE.Mesh(geometriaPlano, materialPlano);
+
+// Deita o plano do terreno
 planoTerreno.rotation.x = -Math.PI / 2;
-planoTerreno.receiveShadow = true; //permitir sombra no terreno
+planoTerreno.receiveShadow = true; // permitir sombra no terreno
 scene.add(planoTerreno);
 
-//Cria as posições validas
+// Cria as posições validas
 gerarPosicoesArvores();
 
 // ÁRVORES
@@ -172,7 +179,7 @@ listaArvores.forEach((arvore, indice) => {
 
     let indiceExclusivo;
 
-    // Trava 
+    // Trava para pegar um índice disponível
     if (indicesPosicoesLivres.length > 0) {
         indiceExclusivo = indicesPosicoesLivres.pop();
     } else {
@@ -185,6 +192,8 @@ listaArvores.forEach((arvore, indice) => {
 
     arvore.position.x = pontoSorteado.x;
     arvore.position.z = camera.position.z - (pontoSorteado.y + (comprimentoTerreno / 2));
+
+    // Consulta o terreno para a árvore nascer exatamente na altura da montanha
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
     scene.add(arvore);
 });
@@ -214,6 +223,7 @@ loader.load('./assets/drone.glb', function (gltf) {
 construirInterface();
 renderizar();
 
+// Loop Principal do jogo
 function renderizar() {
     requestAnimationFrame(renderizar);
     const deltaTime = relogio.getDelta();
@@ -229,7 +239,7 @@ function renderizar() {
         reposicionarArvores();
         atualizarInimigos();
 
-        //Iluminação
+        // Iluminação
         gerenciarIluminacao();
 
         // Sistema de Combate
@@ -274,21 +284,21 @@ function retomarSimulacao() {
     cuboMira.visible = true;
 }
 
-//Iluminação
+// Iluminação
 function gerenciarIluminacao() {
     // Cria as luzes apenas na primeira execução
     if (!luzDirecional) {
-        luzDirecional = new THREE.DirectionalLight(0xffffff, 2.5);
+        luzDirecional = new THREE.DirectionalLight(0xffffff, 3);
         luzDirecional.castShadow = true;
 
-        // Resolução equilibrada 
+        // Resolução equilibrada
         luzDirecional.shadow.mapSize.width = 1024;
         luzDirecional.shadow.mapSize.height = 1024;
 
-        // Evita artefatos e sombras piscando
+        // Evita artefatos e sombras piscando na malha (shadow acne)
         luzDirecional.shadow.bias = -0.0005;
 
-        //Adiciona na cena
+        // Adiciona na cena
         scene.add(luzDirecional);
         scene.add(luzDirecional.target);
     }
@@ -315,6 +325,7 @@ function gerenciarIluminacao() {
 }
 
 function atualizarMira() {
+    // Converte a posição 2D do mouse para um alvo 3D na parede invisível
     raycaster.setFromCamera(mouse, camera);
     raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
@@ -326,16 +337,16 @@ function atualizarMira() {
 }
 
 function atualizarCamera() {
-    // Movimentação para frente
+    // Movimentação contínua para frente
     aviao.position.z -= velocidadeDeslocamento;
     cuboMira.position.z -= velocidadeDeslocamento;
     camera.position.z -= velocidadeDeslocamento;
 
-    // Câmera acompanha o eixo X do avião
+    // Câmera acompanha o eixo X do avião lateralmente
     camera.position.x = aviao.position.x;
     camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 30);
 
-    // Limitação da câmera
+    // Limitação da câmera para não afundar no terreno
     if (camera.position.y < 20) camera.position.y = 20;
     if (camera.position.x > 5) camera.position.x = 5;
     if (camera.position.x < -5) camera.position.x = -5;
@@ -363,17 +374,19 @@ function gerenciarDisparos(deltaTime) {
 }
 
 function gerenciarColisoes() {
-    // Atualiza a Bounding Box principal do avião
+    // Atualiza a Bounding Box principal do avião (Hitbox de colisão rápida)
     bbAviao.setFromObject(aviao);
 
-    // Monitora o dando sofrido/causado
+    // Monitora o dano sofrido/causado
     verificarDanoNoPlayer();
     verificarDanoNosInimigos();
 }
 
 function verificarDanoNoPlayer() {
+    // Loop reverso é necessário para não bugar o índice ao deletar um tiro do array
     for (let i = listaProjeteis.length - 1; i >= 0; i--) {
         const projetil = listaProjeteis[i];
+
         projetil.position.addScaledVector(projetil.userData.direcao, 1.5 + (velocidadeDeslocamento * 0.5));
 
         bbProjetilAux.setFromObject(projetil);
@@ -384,7 +397,7 @@ function verificarDanoNoPlayer() {
             continue;
         }
 
-        // Limpa projéteis muito distantes
+        // Limpa projéteis muito distantes para não sobrecarregar a memória
         if (projetil.position.distanceTo(aviao.position) > 300) {
             removerProjetilDaCena(projetil, listaProjeteis, i);
         }
@@ -394,10 +407,12 @@ function verificarDanoNoPlayer() {
 function verificarDanoNosInimigos() {
     for (let i = listaProjeteisPlayer.length - 1; i >= 0; i--) {
         const projetil = listaProjeteisPlayer[i];
+
         projetil.position.addScaledVector(projetil.userData.direcao, 5.0 + (velocidadeDeslocamento * 0.5));
 
         let atingiuInimigo = false;
-        // Atualiza Box e expande artificialmente para criar uma Hitbox mais generosa
+
+        // Atualiza a Hitbox e expande artificialmente para ser mais fácil de acertar os inimigos
         bbProjetilAux.setFromObject(projetil).expandByScalar(2.5);
 
         for (let j = 0; j < listaInimigos.length; j++) {
@@ -408,7 +423,7 @@ function verificarDanoNosInimigos() {
 
             if (bbProjetilAux.intersectsBox(bbInimigoAux)) {
                 atingiuInimigo = true;
-                inimigo.userData.morrendo = true; // Inicia animação de queda
+                inimigo.userData.morrendo = true; // Inicia animação de queda do drone
                 removerProjetilDaCena(projetil, listaProjeteisPlayer, i);
                 break;
             }
@@ -416,7 +431,6 @@ function verificarDanoNosInimigos() {
 
         if (atingiuInimigo) continue;
 
-        // Limpa projéteis distantes
         if (projetil.position.distanceTo(aviao.position) > 300) {
             removerProjetilDaCena(projetil, listaProjeteisPlayer, i);
         }
@@ -428,36 +442,34 @@ function animarAviao() {
 
     const pontoDestino = cuboMira.position;
     vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
+
+    // .lerp move o avião suavemente até a mira, criando um atraso (efeito de inércia/peso)
     aviao.position.lerp(vetorInterpolacao, 0.02);
 
-    // EIXO X 
-    const desvioLateral = pontoDestino.x - aviao.position.x; //calcula desvio
+    // EIXO X
+    const desvioLateral = pontoDestino.x - aviao.position.x; // calcula desvio lateral
 
-    // EIXO Y (SUBIDA E DESCIDA )
-    // Subida do avião
-    // Calcula a diferença vertical entre a mira e o avião
+    // EIXO Y (SUBIDA E DESCIDA)
     const diferencaY = pontoDestino.y - aviao.position.y;
 
-    // Multiplicado por 0.02 para a inclinação suave
+    // Multiplicado por 0.02 para a inclinação ser suave (Pitch)
     let desvioX = diferencaY * 0.02;
 
-    // Trava para o bico não inclinar excessivamente
+    // Trava para o bico do avião não inclinar excessivamente
     if (desvioX > 0.3) desvioX = 0.3;
     if (desvioX < -0.3) desvioX = -0.3;
 
     // Somar ao -Math.PI/2 faz a frente do avião levantar quando a mira está acima
     const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
-    // Suaviza a rotação em X para acompanhar o movimento suavemente
     aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
 
-    // EIXO Z (INCLINAÇÃO E ROTAÇÕES LATERAIS)
+    // EIXO Z (INCLINAÇÃO LADO DAS ASAS - ROLL)
     let inclinacaoZ = desvioLateral * 0.015; // transforma o desvio em angulo de inclinação
 
-    // Trava de segurança para o avião não virar
+    // Trava de segurança para o avião não virar completamente
     if (inclinacaoZ > 0.35) inclinacaoZ = 0.35;
     if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
 
-    // Aplica rotação de forma suave
     const rotacaoAlvoY = Math.PI + inclinacaoZ;
     aviao.rotation.y += (rotacaoAlvoY - aviao.rotation.y) * 0.1;
 
@@ -475,9 +487,11 @@ function configurarNevoa() {
 }
 
 function atualizarTerreno() {
+    // Move o plano inteiro para frente junto com a câmera
     const deslocamentoZ = camera.position.z - (comprimentoTerreno / 2) + 60;
     planoTerreno.position.z = deslocamentoZ;
 
+    // Acessa o array da GPU direto na memória para alterar a altura (muito mais otimizado)
     const arrayPosicoes = geometriaPlano.attributes.position.array;
 
     for (let linha = 0; linha <= segmentosTerreno; linha++) {
@@ -489,10 +503,12 @@ function atualizarTerreno() {
             const coordenadaMundoX = coordenadaLocalX;
             const coordenadaMundoZ = deslocamentoZ - coordenadaLocalY;
 
+            // Recalcula a altura de cada vértice do terreno simulando movimento da montanha
             arrayPosicoes[indiceOriginal + 2] = calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ);
         }
     }
 
+    // Marca a geometria como alterada para a placa de vídeo redesenhar
     geometriaPlano.attributes.position.needsUpdate = true;
     geometriaPlano.computeVertexNormals();
 }
@@ -502,6 +518,7 @@ function gerarPosicoesArvores() {
     const tentativasMaximas = 10000;
     let tentativas = 0;
 
+    // Sorteia posições verificando a distância mínima para evitar árvores sobrepostas
     while (posicoesValidas.length < 1000 && tentativas < tentativasMaximas) {
         tentativas++;
         const x = (Math.random() - 0.5) * larguraTerreno;
@@ -523,7 +540,7 @@ function gerarPosicoesArvores() {
     // Posições livres
     indicesPosicoesLivres = Array.from({length: posicoesValidas.length}, (_, i) => i);
 
-    // Embaralha a lista de índices 
+    // Embaralha a lista de índices (shuffle) para as árvores nascerem sem um padrão óbvio
     for (let i = indicesPosicoesLivres.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [indicesPosicoesLivres[i], indicesPosicoesLivres[j]] = [indicesPosicoesLivres[j], indicesPosicoesLivres[i]];
@@ -531,6 +548,7 @@ function gerarPosicoesArvores() {
 }
 
 function reposicionarArvores() {
+    // Reutiliza árvores que saíram da visão da câmera para economizar memória (Object Pooling)
     for (let arvore of listaArvores) {
         if (arvore.position.z > camera.position.z + 30) {
 
@@ -541,7 +559,7 @@ function reposicionarArvores() {
             const posicaoAleatoria = Math.floor(Math.random() * indicesPosicoesLivres.length);
             const novoIndice = indicesPosicoesLivres[posicaoAleatoria];
 
-            // Remove esse índice da lista de livres para que nenhuma outra árvore pegue ele
+            // Remove esse índice da lista para que nenhuma outra árvore pegue ele
             indicesPosicoesLivres.splice(posicaoAleatoria, 1);
 
             // Aplica a nova posição na árvore
@@ -549,7 +567,7 @@ function reposicionarArvores() {
             const novoPontoSorteado = posicoesValidas[novoIndice];
 
             arvore.position.x = novoPontoSorteado.x;
-            arvore.position.z -= comprimentoTerreno;
+            arvore.position.z -= comprimentoTerreno; // Teleporta lá pro fundo da névoa
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
         }
     }
@@ -560,7 +578,7 @@ function criarInimigos(quantidade) {
     if (!modeloInimigoBase) return; // Segurança caso o modelo ainda não tenha carregado
 
     for (let i = 0; i < quantidade; i++) {
-        // Clona o modelo carregado para cada inimigo
+        // Clona o modelo base para não precisar carregar o arquivo várias vezes
         const inimigo = modeloInimigoBase.clone();
         inimigo.userData = {morrendo: false, velocidadeX: 0};
         reposicionarInimigo(inimigo);
@@ -575,24 +593,24 @@ function reposicionarInimigo(inimigo) {
     inimigo.rotation.set(0, Math.PI * 1.5, 0);
     inimigo.userData.morrendo = false;
 
-    // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa (fog)
+    // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa
     inimigo.position.z = aviao.position.z - 220 - (Math.random() * 80);
 
-    // Posição X muito mais variada (podem nascer mais perto do centro ou mais nas pontas)
+    // Posição X muito mais variada
     const ladoDireito = Math.random() > 0.5;
     inimigo.position.x = ladoDireito ? (20 + Math.random() * 40) : (-20 - Math.random() * 40);
 
-    // Velocidade aleatória, cruzando o campo de visão
+    // Velocidade aleatória, cruzando o campo de visão na diagonal oposta ao spawn
     inimigo.userData.velocidadeX = (ladoDireito ? -1 : 1) * (0.1 + Math.random() * 0.25);
 
-    // Altura aleatória aproveitando toda a área da mira (10 a 30)
+    // Altura aleatória aproveitando toda a área da mira
     inimigo.position.y = 10 + Math.random() * 20;
 }
 
 function atualizarInimigos() {
     for (let inimigo of listaInimigos) {
         if (inimigo.userData.morrendo) {
-            // Animação de Morte
+            // Animação de Morte (diminui escala progressivamente)
             inimigo.scale.multiplyScalar(0.9);
 
             // Quando fica muito pequeno, renasce no fundo
@@ -600,10 +618,10 @@ function atualizarInimigos() {
                 reposicionarInimigo(inimigo);
             }
         } else {
-            // Movimento lateral contínuo
+            // Movimento lateral contínuo da patrulha
             inimigo.position.x += inimigo.userData.velocidadeX;
 
-            // Reposiciona ao sair da tela pela lateral ou ficou pra trás da câmera
+            // Reposiciona ao sair da tela pela lateral ou se ficou pra trás da câmera
             if (inimigo.position.x > 80 || inimigo.position.x < -80 || inimigo.position.z > camera.position.z + 20) {
                 reposicionarInimigo(inimigo);
             }
@@ -613,30 +631,32 @@ function atualizarInimigos() {
 
 // FUNÇÕES DE TIRO
 function atirarPlayer() {
-    const geometriaTiro = new THREE.PlaneGeometry(1.5, 12.0); //Retangulo 
+    // Criação do laser do player
+    const geometriaTiro = new THREE.PlaneGeometry(1.5, 12.0); // Retângulo alongado
     const materialTiro = new THREE.MeshBasicMaterial({color: 0x00ff00, side: THREE.DoubleSide});
     const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
 
-    geometriaTiro.rotateX(Math.PI / 2); //rotação para o retangulo ficar deitado
+    geometriaTiro.rotateX(Math.PI / 2); // Rotação para o retângulo ficar deitado
     projetil.position.copy(aviao.position);
 
-    // Calcula a direção em direção ao cubo de mira
+    // Normaliza o vetor (tamanho 1) para usar apenas como apontador de direção
     const direcao = new THREE.Vector3();
     direcao.subVectors(cuboMira.position, aviao.position).normalize();
     projetil.userData.direcao = direcao;
 
-    projetil.lookAt(cuboMira.position);
+    projetil.lookAt(cuboMira.position); // Gira o tiro em direção ao alvo
 
     scene.add(projetil);
     listaProjeteisPlayer.push(projetil);
 }
 
 function atirarInimigos() {
-    const geometriaTiro = new THREE.ConeGeometry(0.5, 3, 8); //cone
+    const geometriaTiro = new THREE.ConeGeometry(0.5, 3, 8); // Cone pontudo
     geometriaTiro.rotateX(Math.PI / 2); // Deita o cone
     const materialTiro = new THREE.MeshBasicMaterial({color: 0xffff00});
 
     for (let inimigo of listaInimigos) {
+        // Drone não atira se estiver morrendo ou se ainda não entrou totalmente na tela visual (z < -40)
         if (!inimigo.userData.morrendo && inimigo.position.z < (camera.position.z - 40)) {
             const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
             projetil.position.copy(inimigo.position);
@@ -654,7 +674,10 @@ function atirarInimigos() {
 
 function removerProjetilDaCena(projetil, lista, index) {
     scene.remove(projetil);
+
+    // Obrigatório limpar as malhas da memória da Placa de Vídeo (dispose) para evitar vazamento de memória (Memory Leak)
     if (projetil.geometry) projetil.geometry.dispose();
     if (projetil.material) projetil.material.dispose();
+
     lista.splice(index, 1);
 }
