@@ -500,7 +500,7 @@ function atualizarTerreno() {
 
 function gerarPosicoesArvores() {
     const distanciaMinima = 18; 
-    const tentativasMaximas = 30000;
+    const tentativasMaximas = 10000;
     let tentativas = 0;
 
     while (posicoesValidas.length < 1000 && tentativas < tentativasMaximas) {
@@ -614,10 +614,11 @@ function atualizarInimigos() {
 
 // FUNÇÕES DE TIRO
 function atirarPlayer() {
-    const geometriaTiro = new THREE.BoxGeometry(1.5, 1.5, 6.0);
-    const materialTiro = new THREE.MeshBasicMaterial({color: 0x00ff00});
+    const geometriaTiro = new THREE.PlaneGeometry(1.5, 12.0); //Retangulo 
+    const materialTiro = new THREE.MeshBasicMaterial({color: 0x00ff00, side: THREE.DoubleSide});
     const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
 
+    geometriaTiro.rotateX(Math.PI / 2); //rotação para o retangulo ficar deitado
     projetil.position.copy(aviao.position);
 
     // Calcula a direção em direção ao cubo de mira
@@ -632,7 +633,7 @@ function atirarPlayer() {
 }
 
 function atirarInimigos() {
-    const geometriaTiro = new THREE.ConeGeometry(0.5, 3, 8);
+    const geometriaTiro = new THREE.ConeGeometry(0.5, 3, 8); //cone
     geometriaTiro.rotateX(Math.PI / 2); // Deita o cone
     const materialTiro = new THREE.MeshBasicMaterial({color: 0xffff00});
 
