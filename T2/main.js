@@ -19,7 +19,8 @@ let velocidadeDeslocamento = 0.6; // Começa na velocidade 1
 const vetorInterpolacao = new THREE.Vector3();
 const relogio = new THREE.Clock();
 let limiteXDinamico = 45; // Valor padrão inicial
-const posicoesValidas = [];
+const posicoesValidas = []; // vetor de posições das arvores
+let indicesPosicoesLivres = []; //posição livre para sorteio
 
 // VARIÁVEIS DA COLISÃO
 const bbAviao = new THREE.Box3();
@@ -155,11 +156,9 @@ gerarPosicoesArvores();
 const quantidadeArvores = 350;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
 
-listaArvores.forEach((arvore, indice) => {
-    // arvore.scale.set(0.4, 0.4, 0.4);
 
-    //Iluminação
-    //Ativa a sombra na arvore
+
+listaArvores.forEach((arvore, indice) => {
     arvore.traverse(child => {
         if (child.isMesh) {
             child.castShadow = true;
@@ -167,14 +166,23 @@ listaArvores.forEach((arvore, indice) => {
         }
     });
 
-    // Pega uma das 1000 posições para o X
-    const posicaoSorteada = posicoesValidas[indice % posicoesValidas.length];
-    arvore.position.x = posicaoSorteada.x;
+    let meuIndiceExclusivo;
 
-    // Distribui o Z uniformemente desde a câmera até o fundo no início
-    arvore.position.z = camera.position.z - (Math.random() * comprimentoTerreno);
+    // TRAVA DE SEGURANÇA: Se ainda houver índices no pool, retira um exclusivo
+    if (indicesPosicoesLivres.length > 0) {
+        meuIndiceExclusivo = indicesPosicoesLivres.pop();
+    } else {
+        // Se o pool acabar (gerou menos de 350 posições), reaproveita usando o resto da divisão
+        meuIndiceExclusivo = indice % posicoesValidas.length;
+    }
 
-    // Calcula a altura correta do terreno
+    arvore.userData.indicePosicao = meuIndiceExclusivo; // Guarda o índice nela para lembrar depois
+
+    const pontoSorteado = posicoesValidas[meuIndiceExclusivo];
+    
+    // Agora o pontoSorteado NUNCA será undefined
+    arvore.position.x = pontoSorteado.x;
+    arvore.position.z = camera.position.z - (pontoSorteado.y + (comprimentoTerreno / 2));
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
     scene.add(arvore);
 });
@@ -516,51 +524,58 @@ function atualizarTerreno() {
 }
 
 function gerarPosicoesArvores() {
-    const distanciaMinima = 80;
-    const tentativasMaximas = 15000; // Mais tentativas para garantir as 1000 posições
+    const distanciaMinima = 18; 
+    const tentativasMaximas = 30000;
     let tentativas = 0;
 
     while (posicoesValidas.length < 1000 && tentativas < tentativasMaximas) {
         tentativas++;
-
-        // Sorteia X e Z baseados nos tamanhos do seu terreno
         const x = (Math.random() - 0.5) * larguraTerreno;
-        // O Z mapeia todo o comprimento do terreno
         const z = (Math.random() - 0.5) * comprimentoTerreno;
+        const novaPosicao = new THREE.Vector2(x, z);
 
-        // Verifica se está muito perto de alguma posição já salva
         let muitoPerto = false;
-        for (let pos of posicoesValidas) {
-            const dx = x - pos.x;
-            const dz = z - pos.z;
-            if (Math.sqrt(dx * dx + dz * dz) < distanciaMinima) {
+        for (let i = 0; i < posicoesValidas.length; i++) {
+            if (novaPosicao.distanceToSquared(posicoesValidas[i]) < (distanciaMinima * distanciaMinima)) {
                 muitoPerto = true;
                 break;
             }
         }
-
-        // Se a posição for válida, guarda no vetor
         if (!muitoPerto) {
-            posicoesValidas.push(new THREE.Vector2(x, z));
+            posicoesValidas.push(novaPosicao);
         }
     }
 
-    console.log(tentativas);
+    // Posições livres
+    indicesPosicoesLivres = Array.from({length: posicoesValidas.length}, (_, i) => i);
+    
+    // Embaralha a lista de índices 
+    for (let i = indicesPosicoesLivres.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indicesPosicoesLivres[i], indicesPosicoesLivres[j]] = [indicesPosicoesLivres[j], indicesPosicoesLivres[i]];
+    }
 }
 
 function reposicionarArvores() {
     for (let arvore of listaArvores) {
-        // Se a árvore ficou para trás da câmera
-        if (arvore.position.z > camera.position.z + 20) {
+        if (arvore.position.z > camera.position.z + 30) {
 
-            //Sorteia um índice aleatório das 1000 posições 
-            const indiceAleatorio = Math.floor(Math.random() * posicoesValidas.length);
-            const posicaoSegura = posicoesValidas[indiceAleatorio];
+            // Devolve o índice usado para a lista de disponíveis
+            indicesPosicoesLivres.push(arvore.userData.indicePosicao);
 
-            arvore.position.x = posicaoSegura.x;
-            arvore.position.z -= comprimentoTerreno;
+            // Sorteia uma posição aleatória dos que estão livres
+            const posicaoAleatoria = Math.floor(Math.random() * indicesPosicoesLivres.length);
+            const novoIndice = indicesPosicoesLivres[posicaoAleatoria];
 
-            //Ajusta a altura da montanha para a nova coordenada
+            // Remove esse índice da lista de livres para que nenhuma outra árvore pegue ele
+            indicesPosicoesLivres.splice(posicaoAleatoria, 1);
+
+            // Aplica a nova posição na árvore
+            arvore.userData.indicePosicao = novoIndice;
+            const novoPontoSorteado = posicoesValidas[novoIndice];
+
+            arvore.position.x = novoPontoSorteado.x;
+            arvore.position.z -= comprimentoTerreno; 
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
         }
     }
