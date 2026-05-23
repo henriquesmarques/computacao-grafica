@@ -431,7 +431,7 @@ function animarAviao() {
 
     const pontoDestino = cuboMira.position;
     vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
-    aviao.position.lerp(vetorInterpolacao, 0.02); 
+    aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento); 
 
     // EIXO X 
     const desvioLateral = pontoDestino.x - aviao.position.x; //calcula desvio
