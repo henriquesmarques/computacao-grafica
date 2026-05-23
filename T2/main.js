@@ -638,7 +638,7 @@ function atirarInimigos() {
     const materialTiro = new THREE.MeshBasicMaterial({color: 0xffff00});
 
     for (let inimigo of listaInimigos) {
-        if (!inimigo.userData.morrendo && inimigo.position.z < camera.position.z) {
+        if (!inimigo.userData.morrendo && inimigo.position.z < (camera.position.z - 40)) {
             const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
             projetil.position.copy(inimigo.position);
 
