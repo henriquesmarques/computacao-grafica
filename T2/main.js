@@ -18,7 +18,7 @@ let valorNevoa = 200;
 let velocidadeDeslocamento = 0.6; // Começa na velocidade 1
 const vetorInterpolacao = new THREE.Vector3();
 const relogio = new THREE.Clock();
-let limiteXDinamico = 45; // Valor padrão inicial
+let limiteXDinamico; // Valor padrão inicial
 const posicoesValidas = []; // vetor de posições das arvores
 let indicesPosicoesLivres = []; //posição livre para sorteio
 
@@ -320,8 +320,8 @@ function atualizarMira() {
     raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
     // Limitação espacial da mira na tela
-    if (cuboMira.position.y < 10) cuboMira.position.y = 10;
-    if (cuboMira.position.y > 40) cuboMira.position.y = 40;
+    if (cuboMira.position.y < 8) cuboMira.position.y = 8;
+    if (cuboMira.position.y > 55) cuboMira.position.y = 55;
     if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = limiteXDinamico;
     if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -limiteXDinamico;
 }
@@ -429,38 +429,43 @@ function animarAviao() {
 
     const pontoDestino = cuboMira.position;
     vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
-    aviao.position.lerp(vetorInterpolacao, 0.02);
+    aviao.position.lerp(vetorInterpolacao, 0.02); 
 
+    // EIXO X 
     const desvioLateral = pontoDestino.x - aviao.position.x; //calcula desvio
-    let inclinacaoZ = desvioLateral * 0.015; //transforma o desvio em angulo de inclinação
 
-    //Trava de segurança para o avião não virar
-    if (inclinacaoZ > 0.35) inclinacaoZ = 0.35;
-    if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
-
-    //Aplica rotação de forma suave
-    const rotacaoAlvoY = Math.PI + inclinacaoZ;
-    aviao.rotation.y += (rotacaoAlvoY - aviao.rotation.y) * 0.1;
-
-    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.03;
-    aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
-
+    // EIXO Y (SUBIDA E DESCIDA )
     // Subida do avião
     // Calcula a diferença vertical entre a mira e o avião
     const diferencaY = pontoDestino.y - aviao.position.y;
 
-    // Multiplicado por 0.04 para a inclinação suave
+    // Multiplicado por 0.02 para a inclinação suave
     let desvioX = diferencaY * 0.02;
 
     // Trava para o bico não inclinar excessivamente
     if (desvioX > 0.3) desvioX = 0.3;
     if (desvioX < -0.3) desvioX = -0.3;
 
-    // Somar ao -Math.PI / 2 faz a frente do avião levantar quando a mira está acima
+    // Somar ao -Math.PI/2 faz a frente do avião levantar quando a mira está acima
     const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
     // Suaviza a rotação em X para acompanhar o movimento suavemente
     aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
 
+    // EIXO Z (INCLINAÇÃO E ROTAÇÕES LATERAIS)
+    let inclinacaoZ = desvioLateral * 0.015; // transforma o desvio em angulo de inclinação
+
+    // Trava de segurança para o avião não virar
+    if (inclinacaoZ > 0.35) inclinacaoZ = 0.35;
+    if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
+
+    // Aplica rotação de forma suave
+    const rotacaoAlvoY = Math.PI + inclinacaoZ;
+    aviao.rotation.y += (rotacaoAlvoY - aviao.rotation.y) * 0.1;
+
+    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.03;
+    aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
+
+    // ANIMAÇÃO DA HÉLICE
     helice.rotation.y += Math.PI / 10;
 }
 
