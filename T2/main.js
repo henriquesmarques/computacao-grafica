@@ -21,7 +21,6 @@ const relogio = new THREE.Clock(); // Mantém o tempo independente do FPS do mon
 let limiteXDinamico; // Valor padrão inicial
 const posicoesValidas = []; // vetor de posições das arvores
 let indicesPosicoesLivres = []; // posição livre para sorteio
-let luzDirecional;
 
 // VARIÁVEIS DA COLISÃO
 const bbAviao = new THREE.Box3();
@@ -166,8 +165,9 @@ scene.add(planoTerreno);
 gerarPosicoesArvores();
 
 // ÁRVORES
-const quantidadeArvores = 350;
+const quantidadeArvores = 200;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
+gerarPosicoesArvores();
 
 listaArvores.forEach((arvore, indice) => {
     arvore.traverse(child => {
@@ -177,33 +177,34 @@ listaArvores.forEach((arvore, indice) => {
         }
     });
 
-    let indiceExclusivo;
+    // Anexa a árvore ao seu índice sequencial (de 0 a 199)
+    const indiceFixo = indice % posicoesValidas.length;
+    arvore.userData.indicePosicao = indiceFixo;
 
-    // Trava para pegar um índice disponível
-    if (indicesPosicoesLivres.length > 0) {
-        indiceExclusivo = indicesPosicoesLivres.pop();
-    } else {
-        indiceExclusivo = indice % posicoesValidas.length;
-    }
+    // Pega o ponto fixo correspondente ao índice da árvore
+    const pontoFixo = posicoesValidas[indiceFixo];
 
-    arvore.userData.indicePosicao = indiceExclusivo; // Guarda o índice nela para lembrar depois
-
-    const pontoSorteado = posicoesValidas[indiceExclusivo];
-
-    arvore.position.x = pontoSorteado.x;
-    arvore.position.z = camera.position.z - (pontoSorteado.y + (comprimentoTerreno / 2));
-
-    // Consulta o terreno para a árvore nascer exatamente na altura da montanha
+    // Posiciona usando as coordenadas estáticas do vetor
+    arvore.position.x = pontoFixo.x;
+    arvore.position.z = camera.position.z - (pontoFixo.y + (comprimentoTerreno / 2));
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+
     scene.add(arvore);
 });
+
+// ILUMINAÇÃO
+// Criando iluminação direcional
+let luzDirecional;
+// Cria a luz ambiente
+const luzAmbiente = new THREE.AmbientLight(0xffffff, 1.2);
+scene.add(luzAmbiente);
 
 // INIMIGOS
 let modeloInimigoBase = null;
 const escalaOriginalInimigo = 2.0;
 
 const loader = new GLTFLoader();
-loader.load('./assets/drone.glb', function (gltf) {
+loader.load('./assets/dronebranco.glb', function (gltf) {
     modeloInimigoBase = gltf.scene;
 
     // Ativa as sombras em todas as partes da malha do drone
@@ -290,38 +291,40 @@ function gerenciarIluminacao() {
     if (!luzDirecional) {
         luzDirecional = new THREE.DirectionalLight(0xffffff, 3);
         luzDirecional.castShadow = true;
+        luzDirecional = new THREE.DirectionalLight(0xffffff, 2.5);
+        luzDirecional.castShadow = true;
 
-        // Resolução equilibrada
-        luzDirecional.shadow.mapSize.width = 1024;
-        luzDirecional.shadow.mapSize.height = 1024;
+        // Otimização de resolução
+        luzDirecional.shadow.mapSize.width = 2048;
+        luzDirecional.shadow.mapSize.height = 2048;
 
-        // Evita artefatos e sombras piscando na malha (shadow acne)
-        luzDirecional.shadow.bias = -0.0005;
+        // Evita artefatos e sombras piscando
+        luzDirecional.shadow.bias = -0.0001;
 
-        // Adiciona na cena
+        // Pegamos a distância do fog uma única vez para configurar o tamanho fixo da caixa
+        const distanciaFog = scene.fog ? scene.fog.far : 200;
+
+        luzDirecional.shadow.camera.near = 0.5;
+        // Esticamos bem para frente (+150) para cobrir o fundo da névoa e a sombra não "brotar"
+        luzDirecional.shadow.camera.far = distanciaFog + 150;
+
+        // Tornamos o cubo de projeção largo o suficiente de primeira (* 1.2)
+        const d = distanciaFog * 1.2;
+        luzDirecional.shadow.camera.left = -d;
+        luzDirecional.shadow.camera.right = d;
+        luzDirecional.shadow.camera.top = d;
+        luzDirecional.shadow.camera.bottom = -d;
+
+        // Atualiza a matriz apenas esta vez! Nunca mais no loop.
+        luzDirecional.shadow.camera.updateProjectionMatrix();
+
+        // Adiciona tudo na cena
         scene.add(luzDirecional);
         scene.add(luzDirecional.target);
     }
 
-    // Atualização contínua de posição
-    // Posiciona a luz em X e Y positivo em relação à câmera para projetar na esquerda
-    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 40);
-    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 80);
-
-    // Volume adaptativo em relação ao fog
-    const distanciaFog = scene.fog ? scene.fog.far : 200;
-
-    luzDirecional.shadow.camera.near = 0.5;
-    luzDirecional.shadow.camera.far = distanciaFog;
-
-    // Proporção para cobrir o campo de visão visível
-    const d = distanciaFog * 0.4;
-    luzDirecional.shadow.camera.left = -d;
-    luzDirecional.shadow.camera.right = d;
-    luzDirecional.shadow.camera.top = d;
-    luzDirecional.shadow.camera.bottom = -d;
-
-    luzDirecional.shadow.camera.updateProjectionMatrix();
+    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z + 20);
+    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
 }
 
 function atualizarMira() {
@@ -330,7 +333,7 @@ function atualizarMira() {
     raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
     // Limitação espacial da mira na tela
-    if (cuboMira.position.y < 8) cuboMira.position.y = 8;
+    if (cuboMira.position.y < 10) cuboMira.position.y = 10;
     if (cuboMira.position.y > 55) cuboMira.position.y = 55;
     if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = limiteXDinamico;
     if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -limiteXDinamico;
@@ -431,6 +434,7 @@ function verificarDanoNosInimigos() {
 
         if (atingiuInimigo) continue;
 
+        // Limpa projéteis distantes
         if (projetil.position.distanceTo(aviao.position) > 300) {
             removerProjetilDaCena(projetil, listaProjeteisPlayer, i);
         }
@@ -444,15 +448,17 @@ function animarAviao() {
     vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
 
     // .lerp move o avião suavemente até a mira, criando um atraso (efeito de inércia/peso)
-    aviao.position.lerp(vetorInterpolacao, 0.02);
+    aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento);
 
     // EIXO X
     const desvioLateral = pontoDestino.x - aviao.position.x; // calcula desvio lateral
 
-    // EIXO Y (SUBIDA E DESCIDA)
+    // EIXO Y (SUBIDA E DESCIDA )
+    // Subida do avião
+    // Calcula a diferença vertical entre a mira e o avião
     const diferencaY = pontoDestino.y - aviao.position.y;
 
-    // Multiplicado por 0.02 para a inclinação ser suave (Pitch)
+    // Multiplicado por 0.02 para a inclinação suave
     let desvioX = diferencaY * 0.02;
 
     // Trava para o bico do avião não inclinar excessivamente
@@ -461,15 +467,17 @@ function animarAviao() {
 
     // Somar ao -Math.PI/2 faz a frente do avião levantar quando a mira está acima
     const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
+    // Suaviza a rotação em X para acompanhar o movimento suavemente
     aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
 
-    // EIXO Z (INCLINAÇÃO LADO DAS ASAS - ROLL)
+    // EIXO Z (INCLINAÇÃO E ROTAÇÕES LATERAIS)
     let inclinacaoZ = desvioLateral * 0.015; // transforma o desvio em angulo de inclinação
 
-    // Trava de segurança para o avião não virar completamente
+    // Trava de segurança para o avião não virar
     if (inclinacaoZ > 0.35) inclinacaoZ = 0.35;
     if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
 
+    // Aplica rotação de forma suave
     const rotacaoAlvoY = Math.PI + inclinacaoZ;
     aviao.rotation.y += (rotacaoAlvoY - aviao.rotation.y) * 0.1;
 
@@ -514,17 +522,17 @@ function atualizarTerreno() {
 }
 
 function gerarPosicoesArvores() {
-    const distanciaMinima = 18;
-    const tentativasMaximas = 10000;
+    const distanciaMinima = 20; //distancia entre arvores
+    const tentativasMaximas = 5000; //tentativas de verificação para arvores não ficarem grudadas
     let tentativas = 0;
 
-    // Sorteia posições verificando a distância mínima para evitar árvores sobrepostas
-    while (posicoesValidas.length < 1000 && tentativas < tentativasMaximas) {
+    while ((posicoesValidas.length < quantidadeArvores) && tentativas < tentativasMaximas) {
         tentativas++;
         const x = (Math.random() - 0.5) * larguraTerreno;
         const z = (Math.random() - 0.5) * comprimentoTerreno;
         const novaPosicao = new THREE.Vector2(x, z);
 
+        //faz a verificação com as demais posições
         let muitoPerto = false;
         for (let i = 0; i < posicoesValidas.length; i++) {
             if (novaPosicao.distanceToSquared(posicoesValidas[i]) < (distanciaMinima * distanciaMinima)) {
@@ -536,38 +544,25 @@ function gerarPosicoesArvores() {
             posicoesValidas.push(novaPosicao);
         }
     }
-
-    // Posições livres
-    indicesPosicoesLivres = Array.from({length: posicoesValidas.length}, (_, i) => i);
-
-    // Embaralha a lista de índices (shuffle) para as árvores nascerem sem um padrão óbvio
-    for (let i = indicesPosicoesLivres.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indicesPosicoesLivres[i], indicesPosicoesLivres[j]] = [indicesPosicoesLivres[j], indicesPosicoesLivres[i]];
-    }
 }
 
 function reposicionarArvores() {
     // Reutiliza árvores que saíram da visão da câmera para economizar memória (Object Pooling)
     for (let arvore of listaArvores) {
+        // Se a árvore ficou para trás da câmera
         if (arvore.position.z > camera.position.z + 30) {
 
-            // Devolve o índice usado para a lista de disponíveis
-            indicesPosicoesLivres.push(arvore.userData.indicePosicao);
+            // Pega o índice fixo que foi atribuído a esta árvore na inicialização
+            const indiceFixo = arvore.userData.indicePosicao;
+            const pontoOriginal = posicoesValidas[indiceFixo];
 
-            // Sorteia uma posição aleatória dos que estão livres
-            const posicaoAleatoria = Math.floor(Math.random() * indicesPosicoesLivres.length);
-            const novoIndice = indicesPosicoesLivres[posicaoAleatoria];
+            // Mantém a árvore exatamente no mesmo alinhamento lateral que ela nasceu
+            arvore.position.x = pontoOriginal.x;
 
-            // Remove esse índice da lista para que nenhuma outra árvore pegue ele
-            indicesPosicoesLivres.splice(posicaoAleatoria, 1);
+            // Empurra a arvore para o terreno à frente no horizonte
+            arvore.position.z -= comprimentoTerreno;
 
-            // Aplica a nova posição na árvore
-            arvore.userData.indicePosicao = novoIndice;
-            const novoPontoSorteado = posicoesValidas[novoIndice];
-
-            arvore.position.x = novoPontoSorteado.x;
-            arvore.position.z -= comprimentoTerreno; // Teleporta lá pro fundo da névoa
+            // Recalcula a altura com base no relevo da nova posição
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
         }
     }
@@ -593,8 +588,8 @@ function reposicionarInimigo(inimigo) {
     inimigo.rotation.set(0, Math.PI * 1.5, 0);
     inimigo.userData.morrendo = false;
 
-    // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa
-    inimigo.position.z = aviao.position.z - 220 - (Math.random() * 80);
+    // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa (fog)
+    inimigo.position.z = aviao.position.z - 100 - (Math.random() * 80);
 
     // Posição X muito mais variada
     const ladoDireito = Math.random() > 0.5;
@@ -621,8 +616,8 @@ function atualizarInimigos() {
             // Movimento lateral contínuo da patrulha
             inimigo.position.x += inimigo.userData.velocidadeX;
 
-            // Reposiciona ao sair da tela pela lateral ou se ficou pra trás da câmera
-            if (inimigo.position.x > 80 || inimigo.position.x < -80 || inimigo.position.z > camera.position.z + 20) {
+            // Reposiciona ao sair da tela pela lateral ou ficou pra trás da câmera
+            if (inimigo.position.x > 70 || inimigo.position.x < -70 || inimigo.position.z > camera.position.z) {
                 reposicionarInimigo(inimigo);
             }
         }
