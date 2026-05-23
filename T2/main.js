@@ -200,7 +200,7 @@ scene.add(luzAmbiente);
 
 // INIMIGOS
 let modeloInimigoBase = null;
-const escalaOriginalInimigo = 2.0;
+const escalaOriginalInimigo = 4;
 
 const loader = new GLTFLoader();
 loader.load('./assets/dronebranco.glb', function (gltf) {
@@ -223,7 +223,6 @@ loader.load('./assets/dronebranco.glb', function (gltf) {
 construirInterface();
 renderizar();
 
-// Loop Principal do jogo
 function renderizar() {
     requestAnimationFrame(renderizar);
     const deltaTime = relogio.getDelta();
@@ -284,7 +283,6 @@ function retomarSimulacao() {
     cuboMira.visible = true;
 }
 
-// Iluminação
 function gerenciarIluminacao() {
     // Cria as luzes apenas na primeira execução
     if (!luzDirecional) {
@@ -302,10 +300,10 @@ function gerenciarIluminacao() {
         const distanciaFog = scene.fog ? scene.fog.far : 200;
 
         luzDirecional.shadow.camera.near = 0.5;
-        // Esticamos bem para frente (+150) para cobrir o fundo da névoa e a sombra não "brotar"
+        // Esticamos bem para frente para cobrir o fundo da névoa
         luzDirecional.shadow.camera.far = distanciaFog + 150;
 
-        // Tornamos o cubo de projeção largo o suficiente de primeira (* 1.2)
+        // Tornamos o cubo de projeção largo o suficiente de primeira
         const d = distanciaFog * 1.2;
         luzDirecional.shadow.camera.left = -d;
         luzDirecional.shadow.camera.right = d;
@@ -320,8 +318,8 @@ function gerenciarIluminacao() {
         scene.add(luzDirecional.target);
     }
 
-    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z + 20);
-    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
+    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 30);
+    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 30);
 }
 
 function atualizarMira() {
@@ -330,7 +328,7 @@ function atualizarMira() {
     raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
     // Limitação espacial da mira na tela
-    if (cuboMira.position.y < 10) cuboMira.position.y = 10;
+    if (cuboMira.position.y < 12) cuboMira.position.y = 12;
     if (cuboMira.position.y > 55) cuboMira.position.y = 55;
     if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = limiteXDinamico;
     if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -limiteXDinamico;
@@ -472,8 +470,18 @@ function animarAviao() {
     if (inclinacaoZ > 0.35) inclinacaoZ = 0.35;
     if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
 
-    // Aplica rotação de forma suave
-    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.01;
+    // Define os limites máximos de inclinação (em radianos)
+    const INCLINACAO_MAXIMA = 1;
+    const LIMITE_MIN = Math.PI - INCLINACAO_MAXIMA;
+    const LIMITE_MAX = Math.PI + INCLINACAO_MAXIMA;
+
+    // Calcula a rotação desejada com base na distância do destino
+    let rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.02;
+
+    // Se passar do limite, ele simplesmente "para" na borda, sem pular de volta
+    rotacaoAlvo = Math.max(LIMITE_MIN, Math.min(rotacaoAlvo, LIMITE_MAX));
+
+    // Aplica a interpolação suave (Lerp) que você já estava usando
     aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
 
     // ANIMAÇÃO DA HÉLICE
@@ -662,7 +670,7 @@ function atirarInimigos() {
 function removerProjetilDaCena(projetil, lista, index) {
     scene.remove(projetil);
 
-    // Obrigatório limpar as malhas da memória da Placa de Vídeo (dispose) para evitar vazamento de memória (Memory Leak)
+    // Obrigatório limpar as malhas da memória
     if (projetil.geometry) projetil.geometry.dispose();
     if (projetil.material) projetil.material.dispose();
 
