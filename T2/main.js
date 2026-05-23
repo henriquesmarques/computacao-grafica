@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import {initRenderer, initDefaultBasicLight, onWindowResize} from "../libs/util/util.js";
+import {initRenderer, onWindowResize} from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
 import GUI from '../libs/util/dat.gui.module.js';
-import { GLTFLoader } from '../build/jsm/loaders/GLTFLoader.js';
+import {GLTFLoader} from '../build/jsm/loaders/GLTFLoader.js';
 import {
     criarAviao,
     criarArvores,
@@ -21,6 +21,7 @@ const relogio = new THREE.Clock();
 let limiteXDinamico; // Valor padrão inicial
 const posicoesValidas = []; // vetor de posições das arvores
 let indicesPosicoesLivres = []; //posição livre para sorteio
+let luzDirecional;
 
 // VARIÁVEIS DA COLISÃO
 const bbAviao = new THREE.Box3();
@@ -33,11 +34,9 @@ const listaProjeteis = [];
 const listaProjeteisPlayer = [];
 let tempoDecorridoInimigos = 0;
 const cadenciaTiroInimigos = 1;
-
 let mousePressionado = false;
 let tempoDecorridoTiroPlayer = 0;
 const cadenciaTiroPlayer = 0.15;
-
 const statusJogo = {tirosSofridos: 0};
 
 // --- TRABALHO 1 ---
@@ -135,7 +134,7 @@ window.addEventListener('resize', function () {
     // Calcula o limiteXDinamico no início do jogo
     const aspecto = camera.aspect;
     const fovRadiano = (camera.fov * Math.PI) / 180;
-    
+
     // Calcula a largura visível total
     const distanciaCameraAviao = Math.abs(camera.position.z - aviao.position.z);
     limiteXDinamico = Math.tan(fovRadiano / 2) * distanciaCameraAviao * aspecto;
@@ -183,21 +182,16 @@ listaArvores.forEach((arvore, indice) => {
     arvore.userData.indicePosicao = indiceExclusivo; // Guarda o índice nela para lembrar depois
 
     const pontoSorteado = posicoesValidas[indiceExclusivo];
-    
+
     arvore.position.x = pontoSorteado.x;
     arvore.position.z = camera.position.z - (pontoSorteado.y + (comprimentoTerreno / 2));
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
     scene.add(arvore);
 });
 
-// ILUMINAÇÃO
-initDefaultBasicLight(scene);
-//Criando iluminação direcional
-let luzDirecional;
-
 // INIMIGOS
 let modeloInimigoBase = null;
-const escalaOriginalInimigo = 2.0; // Altere se o modelo for gigante ou minúsculo
+const escalaOriginalInimigo = 2.0;
 
 const loader = new GLTFLoader();
 loader.load('./assets/drone.glb', function (gltf) {
@@ -284,8 +278,8 @@ function retomarSimulacao() {
 function gerenciarIluminacao() {
     // Cria as luzes apenas na primeira execução
     if (!luzDirecional) {
-        luzDirecional = new THREE.DirectionalLight(0xffffff, 1.2);
-        luzDirecional.castShadow = true; // Exigência do trabalho
+        luzDirecional = new THREE.DirectionalLight(0xffffff, 2.5);
+        luzDirecional.castShadow = true;
 
         // Resolução equilibrada 
         luzDirecional.shadow.mapSize.width = 1024;
@@ -301,8 +295,8 @@ function gerenciarIluminacao() {
 
     // Atualização contínua de posição
     // Posiciona a luz em X e Y positivo em relação à câmera para projetar na esquerda
-    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 20);
-    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
+    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 40);
+    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 80);
 
     // Volume adaptativo em relação ao fog
     const distanciaFog = scene.fog ? scene.fog.far : 200;
@@ -434,7 +428,7 @@ function animarAviao() {
 
     const pontoDestino = cuboMira.position;
     vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
-    aviao.position.lerp(vetorInterpolacao, 0.02); 
+    aviao.position.lerp(vetorInterpolacao, 0.02);
 
     // EIXO X 
     const desvioLateral = pontoDestino.x - aviao.position.x; //calcula desvio
@@ -504,7 +498,7 @@ function atualizarTerreno() {
 }
 
 function gerarPosicoesArvores() {
-    const distanciaMinima = 18; 
+    const distanciaMinima = 18;
     const tentativasMaximas = 10000;
     let tentativas = 0;
 
@@ -528,7 +522,7 @@ function gerarPosicoesArvores() {
 
     // Posições livres
     indicesPosicoesLivres = Array.from({length: posicoesValidas.length}, (_, i) => i);
-    
+
     // Embaralha a lista de índices 
     for (let i = indicesPosicoesLivres.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -555,7 +549,7 @@ function reposicionarArvores() {
             const novoPontoSorteado = posicoesValidas[novoIndice];
 
             arvore.position.x = novoPontoSorteado.x;
-            arvore.position.z -= comprimentoTerreno; 
+            arvore.position.z -= comprimentoTerreno;
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
         }
     }
