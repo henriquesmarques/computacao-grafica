@@ -314,8 +314,8 @@ function gerenciarIluminacao() {
         scene.add(luzDirecional.target);
     }
 
-    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 40);
-    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 80);
+    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z + 20);
+    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
 }
 
 function atualizarMira() {
