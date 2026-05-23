@@ -506,7 +506,7 @@ function gerarPosicoesArvores() {
     const tentativasMaximas = 5000; //tentativas de verificação para arvores não ficarem grudadas
     let tentativas = 0;
 
-    while (posicoesValidas.length < 200 && tentativas < tentativasMaximas) {
+    while (posicoesValidas.length < quantidadeArvores && tentativas < tentativasMaximas) {
         tentativas++;
         const x = (Math.random() - 0.5) * larguraTerreno;
         const z = (Math.random() - 0.5) * comprimentoTerreno;
