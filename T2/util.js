@@ -1,16 +1,22 @@
 import * as THREE from 'three';
-import {setDefaultMaterial} from "../libs/util/util.js";
+import { setDefaultMaterial } from "../libs/util/util.js";
 
+/**
+ * Cria o modelo 3D de uma árvore composta por um tronco cilíndrico e três níveis de folhas cônicas.
+ * A altura da árvore sofre uma leve variação aleatória para gerar diversidade visual.
+ *
+ * @returns {THREE.Mesh} A malha (Mesh) contendo o tronco e as folhas agrupadas.
+ */
 export function criarArvore() {
     // Materiais
     const materialVerde = setDefaultMaterial("green");
     const materialMarrom = setDefaultMaterial("brown");
 
-    // Tronco da árvore
+    // Tronco da árvore (Base)
     const cylinderGeometry = new THREE.CylinderGeometry(1.8, 2, 2, 16);
     const tronco = new THREE.Mesh(cylinderGeometry, materialMarrom);
 
-    // Topo da árvore (Folhas)
+    // Topo da árvore (Camadas de folhas)
     const coneGeometry1 = new THREE.ConeGeometry(3, 4, 32);
     const coneGeometry2 = new THREE.ConeGeometry(4, 5, 32);
     const coneGeometry3 = new THREE.ConeGeometry(4.5, 5.5, 32);
@@ -19,19 +25,20 @@ export function criarArvore() {
     const cone2 = new THREE.Mesh(coneGeometry2, materialVerde);
     const cone3 = new THREE.Mesh(coneGeometry3, materialVerde);
 
-    cone1.castShadow = false;
-    cone1.receiveShadow = false;
-    cone2.castShadow = false;
-    cone2.receiveShadow = false;
-    cone3.castShadow = false;
-    cone3.receiveShadow = false;
+    // Otimização: desativa sombras internas nas folhas para melhorar performance
+    cone1.castShadow = false; cone1.receiveShadow = false;
+    cone2.castShadow = false; cone2.receiveShadow = false;
+    cone3.castShadow = false; cone3.receiveShadow = false;
 
+    // Dimensões para empilhamento correto
     const alturaCilindro = tronco.geometry.parameters.height;
     const alturaCone2 = coneGeometry2.parameters.height;
     const alturaCone3 = coneGeometry3.parameters.height;
 
+    // Posicionamento base
     tronco.position.set(0, alturaCilindro / 2, 0);
 
+    // Empilhamento dinâmico das folhas (de baixo para cima)
     const posY3 = alturaCilindro / 2 + alturaCone3 / 2;
     cone3.position.set(0, posY3, 0);
 
@@ -41,12 +48,12 @@ export function criarArvore() {
     const posY1 = posY2 + alturaCone2 / 2;
     cone1.position.set(0, posY1, 0);
 
-    // Adicionando folhas no tronco
+    // Agrupa as folhas como filhas do tronco
     tronco.add(cone1);
     tronco.add(cone2);
     tronco.add(cone3);
 
-    // Alturas variáveis para as árvores
+    // Aplica escala aleatória para variar a altura do conjunto final
     const alturaAleatoria = 0.4 + Math.random() * 0.3;
     tronco.scale.set(alturaAleatoria, alturaAleatoria, alturaAleatoria);
     tronco.position.y = (alturaCilindro * alturaAleatoria) / 2;
@@ -54,28 +61,30 @@ export function criarArvore() {
     return tronco;
 }
 
+/**
+ * Cria o modelo 3D de um avião agrupando formas geométricas básicas.
+ *
+ * @returns {Object} Um objeto contendo a referência do `corpo` (que agrupa o avião inteiro) e da `helice` (para animação).
+ */
 export function criarAviao() {
     // Materiais
     const materialAzul = setDefaultMaterial("rgb(23,62,125)");
     const materialAmarelo = setDefaultMaterial("rgb(194,140,39)");
     const materialVermelho = setDefaultMaterial("rgb(180, 30, 60)");
 
-    // Corpo
-    // Usando CylinderGeometry com bases distintas
+    // Corpo (Cilindro afilado em uma ponta)
     const geometriaCilindro = new THREE.CylinderGeometry(2, 1, 13);
     const corpo = new THREE.Mesh(geometriaCilindro, materialAzul);
     corpo.rotation.x = Math.PI / 2;
 
-    // Asa frontal
-    // Usando SphereGeometry achatado
+    // Asa frontal (Esfera achatada)
     const geometriaEsfera = new THREE.SphereGeometry();
     const asa = new THREE.Mesh(geometriaEsfera, materialAzul);
     asa.scale.set(10, 0.5, 1.5);
     asa.rotation.x = -Math.PI / 2;
     corpo.add(asa);
 
-    // Asa traseira
-    // Usando SphereGeometry achatada, igual à asa principal
+    // Cauda Horizontal (Esfera achatada)
     const geometriaCaudaHoriz = new THREE.SphereGeometry();
     const caudaHorizontal = new THREE.Mesh(geometriaCaudaHoriz, materialVermelho);
     caudaHorizontal.scale.set(3.5, 0.4, 1);
@@ -83,8 +92,7 @@ export function criarAviao() {
     caudaHorizontal.rotation.x = -Math.PI / 2;
     corpo.add(caudaHorizontal);
 
-    // Cauda (Leme)
-    // Usando BoxGeometry para fazer uma barbatana direcional
+    // Leme Vertical (Caixa alongada)
     const geometriaCaudaVert = new THREE.BoxGeometry(0.8, 0.8, 0.8);
     const caudaVertical = new THREE.Mesh(geometriaCaudaVert, materialAmarelo);
     caudaVertical.scale.set(0.3, 2, 1.9);
@@ -92,8 +100,7 @@ export function criarAviao() {
     caudaVertical.rotation.x = -Math.PI / 8;
     corpo.add(caudaVertical);
 
-    // Cabine
-    // Uma meia-esfera alongada em cima do corpo.
+    // Cabine (Meia esfera esticada)
     const geometriaCabine = new THREE.SphereGeometry(0.8);
     const cabine = new THREE.Mesh(geometriaCabine, materialAmarelo);
     cabine.scale.set(1.2, 1.2, 2.5);
@@ -101,8 +108,7 @@ export function criarAviao() {
     cabine.rotation.x = -Math.PI / 2;
     corpo.add(cabine);
 
-    // Hélice
-    // Usando BoxGeometry na parte frontal do avião
+    // Hélice frontal (Caixa achatada)
     const geometriaHelice = new THREE.BoxGeometry(1, 1, 1);
     const helice = new THREE.Mesh(geometriaHelice, materialVermelho);
     helice.scale.set(5, 0.4, 0.1);
@@ -110,8 +116,7 @@ export function criarAviao() {
     helice.rotation.x = -Math.PI / 2;
     corpo.add(helice);
 
-    // Miolo da Hélice
-    // Usando SphereGeometry no centro da hélice
+    // Miolo central da hélice (Esfera)
     const geometriaMiolo = new THREE.SphereGeometry();
     const miolo = new THREE.Mesh(geometriaMiolo, materialAmarelo);
     miolo.scale.set(0.6, 0.6, 0.6);
@@ -119,8 +124,7 @@ export function criarAviao() {
     miolo.rotation.x = -Math.PI / 2;
     corpo.add(miolo);
 
-    // Arco
-    // Usando TorusGeometry para dar sensação de movimento na hélice
+    // Efeito de movimento (Torus translúcido/fino simulando a hélice girando)
     const geometriaArco = new THREE.TorusGeometry(1.85, 0.14);
     const arco = new THREE.Mesh(geometriaArco, materialVermelho);
     arco.scale.set(1.1, 1.1, 0.01);
@@ -128,26 +132,31 @@ export function criarAviao() {
     arco.rotation.x = -Math.PI / 2;
     corpo.add(arco);
 
-    return {
-        corpo: corpo,
-        helice: helice
-    };
+    return { corpo, helice };
 }
 
+/**
+ * Instancia uma quantidade definida de árvores para posterior distribuição no cenário.
+ *
+ * @param {number} comprimentoPlano - Tamanho do plano no eixo Z (não utilizado na geração atual, mas útil para expansão).
+ * @param {number} larguraPlano - Tamanho do plano no eixo X (não utilizado na geração atual).
+ * @param {number} total - Quantidade de árvores a serem geradas.
+ * @returns {THREE.Mesh[]} Vetor contendo as malhas (Meshes) das árvores instanciadas.
+ */
 export function criarArvores(comprimentoPlano, larguraPlano, total) {
-    const arvores = []; // Lista para colocar as árvores
-
+    const arvores = [];
     for (let i = 0; i < total; i++) {
-        // Cria a malha usando a sua função existente
-        const arvore = criarArvore(); 
-        
-        // Adiciona na lista sem definir X ou Z aqui, pois a outra função definirá isso 
-        arvores.push(arvore);
+        arvores.push(criarArvore());
     }
-    
     return arvores;
 }
 
+/**
+ * Configura e inicializa a câmera de perspectiva da cena.
+ *
+ * @param {THREE.Vector3} position - A posição inicial da câmera no espaço 3D.
+ * @returns {THREE.PerspectiveCamera} A câmera configurada apontando para a origem (0,0,0).
+ */
 export function iniciarCamera(position) {
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.copy(position);
@@ -156,72 +165,103 @@ export function iniciarCamera(position) {
 }
 
 // ============================================================================
-// SISTEMA DE GERAÇÃO DE RUÍDO CONTÍNUO (FRACTAL VALUE NOISE)
+// SISTEMA DE GERAÇÃO DE RUÍDO CONTÍNUO (FRACTAL VALUE NOISE / fBM)
 // ============================================================================
-// Este conjunto de funções gera elevações suaves de montanhas utilizando uma
-// abordagem matemática pseudo-aleatória consistente, permitindo mapear a altura
-// de um terreno infinito dependendo apenas das coordenadas globais X e Z.
 
-// Função Hash: Gera um valor pseudo-aleatório baseado nas coordenadas de entrada.
-// Para as mesmas coordenadas (x,y), devolve sempre o mesmo resultado.
+/**
+ * Função Hash: Gera um valor escalar pseudo-aleatório baseado em coordenadas 2D.
+ * É determinística: para o mesmo (x, y), retorna sempre o mesmo valor.
+ *
+ * @param {number} x - Coordenada X
+ * @param {number} y - Coordenada Y (ou Z no espaço 3D)
+ * @returns {number} Um valor entre 0 e 1.
+ */
 function gerarHash(x, y) {
     let valor = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
     return valor - Math.floor(valor);
 }
 
-// Interpolação Linear: Mistura dois valores gradualmente baseada num fator (entre 0 e 1).
+/**
+ * Interpolação Linear (Lerp): Transita entre dois valores baseando-se num fator.
+ *
+ * @param {number} inicio - Valor inicial
+ * @param {number} fim - Valor final
+ * @param {number} fator - Porcentagem da transição (0 a 1)
+ * @returns {number} O valor interpolado.
+ */
 function interpolacaoLinear(inicio, fim, fator) {
     return inicio + fator * (fim - inicio);
 }
 
-// Ruído 2D Suavizado: Utiliza o Hash nos 4 cantos de uma grelha imaginária e
-// suaviza as transições (smoothstep) para evitar solavancos grosseiros.
+/**
+ * Value Noise 2D: Gera um ruído suave interpolando os valores "Hash" dos 4 cantos
+ * de um grid virtual usando uma curva de suavização (Smoothstep).
+ *
+ * @param {number} x - Coordenada contínua X
+ * @param {number} y - Coordenada contínua Y
+ * @returns {number} Valor suavizado de ruído para as coordenadas dadas.
+ */
 function gerarRuido2D(x, y) {
     const indiceX = Math.floor(x);
     const indiceY = Math.floor(y);
     const parteFracionariaX = x - indiceX;
     const parteFracionariaY = y - indiceY;
 
-    // Aplicação da curva matemática de suavização (Smoothstep)
+    // Aplicação da curva matemática de suavização (Smoothstep: 3x^2 - 2x^3)
     const curvaX = parteFracionariaX * parteFracionariaX * (3.0 - 2.0 * parteFracionariaX);
     const curvaY = parteFracionariaY * parteFracionariaY * (3.0 - 2.0 * parteFracionariaY);
 
-    // Obtém a fundação aleatória nos 4 cantos de "células" matemáticas
+    // Obtém a "semente" pseudo-aleatória nos 4 cantos da célula do grid
     const baseInferiorEsquerda = gerarHash(indiceX, indiceY);
     const baseInferiorDireita = gerarHash(indiceX + 1, indiceY);
     const baseSuperiorEsquerda = gerarHash(indiceX, indiceY + 1);
     const baseSuperiorDireita = gerarHash(indiceX + 1, indiceY + 1);
 
-    // Mistura (Interpola) horizontalmente os valores inferiores e depois superiores
+    // Mistura (Interpola) horizontalmente as bases inferiores e superiores
     const resultadoInferior = interpolacaoLinear(baseInferiorEsquerda, baseInferiorDireita, curvaX);
     const resultadoSuperior = interpolacaoLinear(baseSuperiorEsquerda, baseSuperiorDireita, curvaX);
 
-    // Mistura verticalmente o resultado final
+    // Interpola verticalmente para obter o valor final 2D
     return interpolacaoLinear(resultadoInferior, resultadoSuperior, curvaY);
 }
 
-// Ruído Fractal: Agrega (soma) múltiplas camadas (oitavas) de ruído,
-// onde a cada passo se adicionam detalhes menores mas com menor impacto na altura.
-// Isto cria silhuetas com grandes montanhas contendo pequenos picos rochosos.
+/**
+ * Fractional Brownian Motion (fBm) / Ruído Fractal: Agrega (soma) múltiplas camadas
+ * (oitavas) de Value Noise para gerar terrenos complexos e naturais.
+ *
+ * @param {number} x - Coordenada X global
+ * @param {number} y - Coordenada Y (Z) global
+ * @param {number} [oitavas=4] - Quantidade de camadas de detalhe (quanto maior, mais detalhado e custoso)
+ * @returns {number} O ruído acumulado e normalizado (0 a 1).
+ */
 function gerarRuidoFractal(x, y, oitavas = 4) {
     let valorAcumulado = 0;
     let amplitudeTotal = 1;
-    let frequenciaTotal = 0.015; // Modela o quão "espalhadas" são as montanhas
+    let frequenciaTotal = 0.015; // Define a escala macro das montanhas
     let somaPesos = 0;
 
     for (let iteracao = 0; iteracao < oitavas; iteracao++) {
         valorAcumulado += gerarRuido2D(x * frequenciaTotal, y * frequenciaTotal) * amplitudeTotal;
         somaPesos += amplitudeTotal;
 
-        amplitudeTotal *= 0.5; // Reduz a altura dos micro-detalhes
-        frequenciaTotal *= 2.0; // Aumenta a quantidade (frequência) das irregularidades
+        amplitudeTotal *= 0.5;  // Reduz o peso/altura dos micro-detalhes (Persistência)
+        frequenciaTotal *= 2.0; // Aumenta a quantidade de detalhes / imperfeições (Lacunaridade)
     }
-    return valorAcumulado / somaPesos; // Normaliza o ruído para uma escala limpa entre 0 e 1
+
+    // Normaliza para manter o limite de escala estrito
+    return valorAcumulado / somaPesos;
 }
 
-// Devolve o "Z" (aqui mapeado como Y no mundo 3D) final dos vértices da malha.
+/**
+ * Calcula a elevação final (eixo Y) do terreno para coordenadas específicas do mundo.
+ * Aplica escalonamento e deslocamento (Offset) sobre o ruído fractal base.
+ *
+ * @param {number} coordenadaMundoX - Posição X absoluta no cenário.
+ * @param {number} coordenadaMundoZ - Posição Z absoluta no cenário.
+ * @returns {number} A altura final para o vértice do terreno na posição informada.
+ */
 export function calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ) {
     const ruido = gerarRuidoFractal(coordenadaMundoX, coordenadaMundoZ);
-    // Extrapola o resultado final (de 0 a 1) para a nossa topografia visível
+    // Mapeamento: Extrapola de [0, 1] para amplitudes topográficas visíveis (de -15 a +10 unidades de altura)
     return -15 + ruido * 25;
 }
