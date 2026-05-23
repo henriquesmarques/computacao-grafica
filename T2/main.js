@@ -155,12 +155,11 @@ planoTerreno.rotation.x = -Math.PI / 2;
 planoTerreno.receiveShadow = true; //permitir sombra no terreno
 scene.add(planoTerreno);
 
-//Cria as posições validas
-gerarPosicoesArvores();
 
 // ÁRVORES
 const quantidadeArvores = 200;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
+gerarPosicoesArvores();
 
 listaArvores.forEach((arvore, indice) => {
     arvore.traverse(child => {
@@ -506,7 +505,7 @@ function gerarPosicoesArvores() {
     const tentativasMaximas = 5000; //tentativas de verificação para arvores não ficarem grudadas
     let tentativas = 0;
 
-    while (posicoesValidas.length < quantidadeArvores && tentativas < tentativasMaximas) {
+    while ((posicoesValidas.length < quantidadeArvores) && tentativas < tentativasMaximas) {
         tentativas++;
         const x = (Math.random() - 0.5) * larguraTerreno;
         const z = (Math.random() - 0.5) * comprimentoTerreno;
