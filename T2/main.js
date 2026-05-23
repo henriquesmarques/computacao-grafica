@@ -164,19 +164,19 @@ listaArvores.forEach((arvore, indice) => {
         }
     });
 
-    let indice;
+    let indiceExclusivo;
 
     // Trava 
     if (indicesPosicoesLivres.length > 0) {
-        indice = indicesPosicoesLivres.pop();
+        indiceExclusivo = indicesPosicoesLivres.pop();
     } else {
-        indice = indice % posicoesValidas.length;
+        indiceExclusivo = indice % posicoesValidas.length;
     }
 
-    arvore.userData.indicePosicao = indice; 
+    arvore.userData.indicePosicao = indiceExclusivo; // Guarda o índice nela para lembrar depois
 
-    const pontoSorteado = posicoesValidas[indice];
-
+    const pontoSorteado = posicoesValidas[indiceExclusivo];
+    
     arvore.position.x = pontoSorteado.x;
     arvore.position.z = camera.position.z - (pontoSorteado.y + (comprimentoTerreno / 2));
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
