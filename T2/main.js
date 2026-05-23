@@ -313,8 +313,8 @@ function gerenciarIluminacao() {
         scene.add(luzDirecional.target);
     }
 
-    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z + 20);
-    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
+    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 30);
+    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 30);
 }
 
 function atualizarMira() {
@@ -461,7 +461,7 @@ function animarAviao() {
     if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
 
     // Aplica rotação de forma suave
-    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.01;
+    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.3;
     aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
 
     // ANIMAÇÃO DA HÉLICE
