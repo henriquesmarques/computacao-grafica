@@ -569,7 +569,7 @@ function reposicionarInimigo(inimigo) {
     inimigo.userData.morrendo = false;
 
     // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa (fog)
-    inimigo.position.z = aviao.position.z - 220 - (Math.random() * 80);
+    inimigo.position.z = aviao.position.z - 100 - (Math.random() * 80);
 
     // Posição X muito mais variada (podem nascer mais perto do centro ou mais nas pontas)
     const ladoDireito = Math.random() > 0.5;
@@ -597,7 +597,7 @@ function atualizarInimigos() {
             inimigo.position.x += inimigo.userData.velocidadeX;
 
             // Reposiciona ao sair da tela pela lateral ou ficou pra trás da câmera
-            if (inimigo.position.x > 80 || inimigo.position.x < -80 || inimigo.position.z > camera.position.z + 20) {
+            if (inimigo.position.x > 70 || inimigo.position.x < -70 || inimigo.position.z > camera.position.z) {
                 reposicionarInimigo(inimigo);
             }
         }
