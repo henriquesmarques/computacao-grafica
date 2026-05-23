@@ -20,7 +20,6 @@ const vetorInterpolacao = new THREE.Vector3();
 const relogio = new THREE.Clock();
 let limiteXDinamico; // Valor padrão inicial
 const posicoesValidas = []; // vetor de posições das arvores
-let indicesPosicoesLivres = []; //posição livre para sorteio
 
 // VARIÁVEIS DA COLISÃO
 const bbAviao = new THREE.Box3();
@@ -160,7 +159,7 @@ scene.add(planoTerreno);
 gerarPosicoesArvores();
 
 // ÁRVORES
-const quantidadeArvores = 350;
+const quantidadeArvores = 200;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
 
 listaArvores.forEach((arvore, indice) => {
@@ -171,27 +170,22 @@ listaArvores.forEach((arvore, indice) => {
         }
     });
 
-    let indiceExclusivo;
+    // Anexa a árvore ao seu índice sequencial (de 0 a 199)
+    const indiceFixo = indice % posicoesValidas.length;
+    arvore.userData.indicePosicao = indiceFixo;
 
-    // Trava 
-    if (indicesPosicoesLivres.length > 0) {
-        indiceExclusivo = indicesPosicoesLivres.pop();
-    } else {
-        indiceExclusivo = indice % posicoesValidas.length;
-    }
-
-    arvore.userData.indicePosicao = indiceExclusivo; // Guarda o índice nela para lembrar depois
-
-    const pontoSorteado = posicoesValidas[indiceExclusivo];
+    // Pega o ponto fixo correspondente ao índice da árvore 
+    const pontoFixo = posicoesValidas[indiceFixo];
     
-    arvore.position.x = pontoSorteado.x;
-    arvore.position.z = camera.position.z - (pontoSorteado.y + (comprimentoTerreno / 2));
+    // Posiciona usando as coordenadas estáticas do vetor
+    arvore.position.x = pontoFixo.x;
+    arvore.position.z = camera.position.z - (pontoFixo.y + (comprimentoTerreno / 2));
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+    
     scene.add(arvore);
 });
 
 // ILUMINAÇÃO
-initDefaultBasicLight(scene);
 //Criando iluminação direcional
 let luzDirecional;
 
@@ -200,7 +194,7 @@ let modeloInimigoBase = null;
 const escalaOriginalInimigo = 2.0; // Altere se o modelo for gigante ou minúsculo
 
 const loader = new GLTFLoader();
-loader.load('./assets/drone.glb', function (gltf) {
+loader.load('./assets/dronebranco.glb', function (gltf) {
     modeloInimigoBase = gltf.scene;
 
     // Ativa as sombras em todas as partes da malha do drone
@@ -226,6 +220,7 @@ function renderizar() {
 
     if (animacaoAtiva) {
         // Atualização de Posições e Controles
+        
         atualizarMira();
         atualizarCamera();
 
@@ -284,40 +279,44 @@ function retomarSimulacao() {
 function gerenciarIluminacao() {
     // Cria as luzes apenas na primeira execução
     if (!luzDirecional) {
-        luzDirecional = new THREE.DirectionalLight(0xffffff, 1.2);
-        luzDirecional.castShadow = true; // Exigência do trabalho
+        luzDirecional = new THREE.DirectionalLight(0xffffff, 2.5);
+        luzDirecional.castShadow = true; 
 
-        // Resolução equilibrada 
-        luzDirecional.shadow.mapSize.width = 1024;
-        luzDirecional.shadow.mapSize.height = 1024;
+        // Otimização de resolução 
+        luzDirecional.shadow.mapSize.width = 2048;
+        luzDirecional.shadow.mapSize.height = 2048;
 
         // Evita artefatos e sombras piscando
-        luzDirecional.shadow.bias = -0.0005;
+        luzDirecional.shadow.bias = -0.0001;
 
-        //Adiciona na cena
+        // Pegamos a distância do fog uma única vez para configurar o tamanho fixo da caixa
+        const distanciaFog = scene.fog ? scene.fog.far : 200;
+
+        luzDirecional.shadow.camera.near = 0.5;
+        // Esticamos bem para frente (+150) para cobrir o fundo da névoa e a sombra não "brotar"
+        luzDirecional.shadow.camera.far = distanciaFog + 150;
+
+        // Tornamos o cubo de projeção largo o suficiente de primeira (* 1.2)
+        const d = distanciaFog * 1.2;
+        luzDirecional.shadow.camera.left = -d;
+        luzDirecional.shadow.camera.right = d;
+        luzDirecional.shadow.camera.top = d;
+        luzDirecional.shadow.camera.bottom = -d;
+
+        // Atualiza a matriz apenas esta vez! Nunca mais no loop.
+        luzDirecional.shadow.camera.updateProjectionMatrix();
+
+        // Adiciona tudo na cena
         scene.add(luzDirecional);
         scene.add(luzDirecional.target);
+
+        // Cria a luz ambiente bem clara
+        const luzAmbiente = new THREE.AmbientLight(0xffffff, 1.2);
+        scene.add(luzAmbiente);
     }
 
-    // Atualização contínua de posição
-    // Posiciona a luz em X e Y positivo em relação à câmera para projetar na esquerda
-    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 20);
-    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 60);
-
-    // Volume adaptativo em relação ao fog
-    const distanciaFog = scene.fog ? scene.fog.far : 200;
-
-    luzDirecional.shadow.camera.near = 0.5;
-    luzDirecional.shadow.camera.far = distanciaFog;
-
-    // Proporção para cobrir o campo de visão visível
-    const d = distanciaFog * 0.4;
-    luzDirecional.shadow.camera.left = -d;
-    luzDirecional.shadow.camera.right = d;
-    luzDirecional.shadow.camera.top = d;
-    luzDirecional.shadow.camera.bottom = -d;
-
-    luzDirecional.shadow.camera.updateProjectionMatrix();
+    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 40);
+    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 80);
 }
 
 function atualizarMira() {
@@ -325,7 +324,7 @@ function atualizarMira() {
     raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
     // Limitação espacial da mira na tela
-    if (cuboMira.position.y < 8) cuboMira.position.y = 8;
+    if (cuboMira.position.y < 10) cuboMira.position.y = 10;
     if (cuboMira.position.y > 55) cuboMira.position.y = 55;
     if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = limiteXDinamico;
     if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -limiteXDinamico;
@@ -504,16 +503,17 @@ function atualizarTerreno() {
 }
 
 function gerarPosicoesArvores() {
-    const distanciaMinima = 18; 
-    const tentativasMaximas = 10000;
+    const distanciaMinima = 20; //distancia entre arvores
+    const tentativasMaximas = 5000; //tentativas de verificação para arvores não ficarem grudadas
     let tentativas = 0;
 
-    while (posicoesValidas.length < 1000 && tentativas < tentativasMaximas) {
+    while (posicoesValidas.length < 200 && tentativas < tentativasMaximas) {
         tentativas++;
         const x = (Math.random() - 0.5) * larguraTerreno;
         const z = (Math.random() - 0.5) * comprimentoTerreno;
         const novaPosicao = new THREE.Vector2(x, z);
 
+        //faz a verificação com as demais posições
         let muitoPerto = false;
         for (let i = 0; i < posicoesValidas.length; i++) {
             if (novaPosicao.distanceToSquared(posicoesValidas[i]) < (distanciaMinima * distanciaMinima)) {
@@ -525,37 +525,24 @@ function gerarPosicoesArvores() {
             posicoesValidas.push(novaPosicao);
         }
     }
-
-    // Posições livres
-    indicesPosicoesLivres = Array.from({length: posicoesValidas.length}, (_, i) => i);
-    
-    // Embaralha a lista de índices 
-    for (let i = indicesPosicoesLivres.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indicesPosicoesLivres[i], indicesPosicoesLivres[j]] = [indicesPosicoesLivres[j], indicesPosicoesLivres[i]];
-    }
 }
 
 function reposicionarArvores() {
     for (let arvore of listaArvores) {
+        // Se a árvore ficou para trás da câmera
         if (arvore.position.z > camera.position.z + 30) {
 
-            // Devolve o índice usado para a lista de disponíveis
-            indicesPosicoesLivres.push(arvore.userData.indicePosicao);
+            // Pega o índice fixo que foi atribuído a esta árvore na inicialização
+            const indiceFixo = arvore.userData.indicePosicao;
+            const pontoOriginal = posicoesValidas[indiceFixo];
 
-            // Sorteia uma posição aleatória dos que estão livres
-            const posicaoAleatoria = Math.floor(Math.random() * indicesPosicoesLivres.length);
-            const novoIndice = indicesPosicoesLivres[posicaoAleatoria];
-
-            // Remove esse índice da lista de livres para que nenhuma outra árvore pegue ele
-            indicesPosicoesLivres.splice(posicaoAleatoria, 1);
-
-            // Aplica a nova posição na árvore
-            arvore.userData.indicePosicao = novoIndice;
-            const novoPontoSorteado = posicoesValidas[novoIndice];
-
-            arvore.position.x = novoPontoSorteado.x;
+            // Mantém a árvore exatamente no mesmo alinhamento lateral que ela nasceu
+            arvore.position.x = pontoOriginal.x;
+            
+            // Empurra a arvore para o terreno à frente no horizonte
             arvore.position.z -= comprimentoTerreno; 
+            
+            // Recalcula a altura com base no relevo da nova posição
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
         }
     }
