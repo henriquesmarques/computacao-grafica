@@ -126,14 +126,19 @@ window.addEventListener('keydown', function (event) {
 
 //Responsividade
 window.addEventListener('resize', function () {
-    // 1. Atualiza o Three.js (Câmera e Renderizador)
+    //Atualiza o aspecto da câmera
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+    //Atualiza o tamanho do renderizador
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // 2. Aumentamos o fator para 55 e as travas de segurança (Mínimo 45, Máximo 95)
-    // Isso vai permitir que a mira e o avião naveguem por toda a amplitude lateral do cenário
-    limiteXDinamico = Math.max(45, Math.min(95, camera.aspect * 55));
+    // Calcula o limiteXDinamico no início do jogo
+    const aspecto = camera.aspect;
+    const fovRadiano = (camera.fov * Math.PI) / 180;
+    
+    // Calcula a largura visível total
+    const distanciaCameraAviao = Math.abs(camera.position.z - aviao.position.z);
+    limiteXDinamico = Math.tan(fovRadiano / 2) * distanciaCameraAviao * aspecto;
 
     if (typeof onWindowResize === 'function') {
         onWindowResize(camera, renderer);
@@ -283,8 +288,8 @@ function gerenciarIluminacao() {
         luzDirecional.castShadow = true; // Exigência do trabalho
 
         // Resolução equilibrada 
-        luzDirecional.shadow.mapSize.width = 2048;
-        luzDirecional.shadow.mapSize.height = 2048;
+        luzDirecional.shadow.mapSize.width = 1024;
+        luzDirecional.shadow.mapSize.height = 1024;
 
         // Evita artefatos e sombras piscando
         luzDirecional.shadow.bias = -0.0005;
