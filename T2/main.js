@@ -20,7 +20,6 @@ const vetorInterpolacao = new THREE.Vector3(); // Cache para evitar recriar veto
 const relogio = new THREE.Clock(); // Mantém o tempo independente do FPS do monitor
 let limiteXDinamico; // Valor padrão inicial
 const posicoesValidas = []; // vetor de posições das arvores
-let indicesPosicoesLivres = []; // posição livre para sorteio
 
 // VARIÁVEIS DA COLISÃO
 const bbAviao = new THREE.Box3();
@@ -161,12 +160,12 @@ planoTerreno.rotation.x = -Math.PI / 2;
 planoTerreno.receiveShadow = true; // permitir sombra no terreno
 scene.add(planoTerreno);
 
-// Cria as posições validas
-gerarPosicoesArvores();
-
 // ÁRVORES
 const quantidadeArvores = 200;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
+gerarPosicoesArvores();
+
+// Cria as posições validas
 gerarPosicoesArvores();
 
 listaArvores.forEach((arvore, indice) => {
@@ -289,8 +288,6 @@ function retomarSimulacao() {
 function gerenciarIluminacao() {
     // Cria as luzes apenas na primeira execução
     if (!luzDirecional) {
-        luzDirecional = new THREE.DirectionalLight(0xffffff, 3);
-        luzDirecional.castShadow = true;
         luzDirecional = new THREE.DirectionalLight(0xffffff, 2.5);
         luzDirecional.castShadow = true;
 
@@ -377,19 +374,17 @@ function gerenciarDisparos(deltaTime) {
 }
 
 function gerenciarColisoes() {
-    // Atualiza a Bounding Box principal do avião (Hitbox de colisão rápida)
+    // Atualiza a Bounding Box principal do avião
     bbAviao.setFromObject(aviao);
 
-    // Monitora o dano sofrido/causado
+    // Monitora o dando sofrido/causado
     verificarDanoNoPlayer();
     verificarDanoNosInimigos();
 }
 
 function verificarDanoNoPlayer() {
-    // Loop reverso é necessário para não bugar o índice ao deletar um tiro do array
     for (let i = listaProjeteis.length - 1; i >= 0; i--) {
         const projetil = listaProjeteis[i];
-
         projetil.position.addScaledVector(projetil.userData.direcao, 1.5 + (velocidadeDeslocamento * 0.5));
 
         bbProjetilAux.setFromObject(projetil);
@@ -400,7 +395,7 @@ function verificarDanoNoPlayer() {
             continue;
         }
 
-        // Limpa projéteis muito distantes para não sobrecarregar a memória
+        // Limpa projéteis muito distantes
         if (projetil.position.distanceTo(aviao.position) > 300) {
             removerProjetilDaCena(projetil, listaProjeteis, i);
         }
@@ -478,10 +473,7 @@ function animarAviao() {
     if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
 
     // Aplica rotação de forma suave
-    const rotacaoAlvoY = Math.PI + inclinacaoZ;
-    aviao.rotation.y += (rotacaoAlvoY - aviao.rotation.y) * 0.1;
-
-    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.03;
+    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.01;
     aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
 
     // ANIMAÇÃO DA HÉLICE
@@ -526,7 +518,7 @@ function gerarPosicoesArvores() {
     const tentativasMaximas = 5000; //tentativas de verificação para arvores não ficarem grudadas
     let tentativas = 0;
 
-    while ((posicoesValidas.length < quantidadeArvores) && tentativas < tentativasMaximas) {
+    while (posicoesValidas.length < quantidadeArvores && tentativas < tentativasMaximas) {
         tentativas++;
         const x = (Math.random() - 0.5) * larguraTerreno;
         const z = (Math.random() - 0.5) * comprimentoTerreno;
@@ -591,14 +583,14 @@ function reposicionarInimigo(inimigo) {
     // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa (fog)
     inimigo.position.z = aviao.position.z - 100 - (Math.random() * 80);
 
-    // Posição X muito mais variada
+    // Posição X muito mais variada (podem nascer mais perto do centro ou mais nas pontas)
     const ladoDireito = Math.random() > 0.5;
     inimigo.position.x = ladoDireito ? (20 + Math.random() * 40) : (-20 - Math.random() * 40);
 
     // Velocidade aleatória, cruzando o campo de visão na diagonal oposta ao spawn
     inimigo.userData.velocidadeX = (ladoDireito ? -1 : 1) * (0.1 + Math.random() * 0.25);
 
-    // Altura aleatória aproveitando toda a área da mira
+    // Altura aleatória aproveitando toda a área da mira (10 a 30)
     inimigo.position.y = 10 + Math.random() * 20;
 }
 
