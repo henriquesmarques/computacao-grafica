@@ -186,8 +186,11 @@ listaArvores.forEach((arvore, indice) => {
 });
 
 // ILUMINAÇÃO
-//Criando iluminação direcional
+// Criando iluminação direcional
 let luzDirecional;
+// Cria a luz ambiente
+const luzAmbiente = new THREE.AmbientLight(0xffffff, 1.2);
+scene.add(luzAmbiente);
 
 // INIMIGOS
 let modeloInimigoBase = null;
@@ -309,10 +312,6 @@ function gerenciarIluminacao() {
         // Adiciona tudo na cena
         scene.add(luzDirecional);
         scene.add(luzDirecional.target);
-
-        // Cria a luz ambiente bem clara
-        const luzAmbiente = new THREE.AmbientLight(0xffffff, 1.2);
-        scene.add(luzAmbiente);
     }
 
     luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 40);
