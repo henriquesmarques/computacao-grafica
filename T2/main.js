@@ -461,10 +461,7 @@ function animarAviao() {
     if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
 
     // Aplica rotação de forma suave
-    const rotacaoAlvoY = Math.PI + inclinacaoZ;
-    aviao.rotation.y += (rotacaoAlvoY - aviao.rotation.y) * 0.1;
-
-    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.03;
+    const rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.01;
     aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
 
     // ANIMAÇÃO DA HÉLICE
