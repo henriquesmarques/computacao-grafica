@@ -163,7 +163,6 @@ scene.add(planoTerreno);
 // ÁRVORES
 const quantidadeArvores = 200;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
-gerarPosicoesArvores();
 
 // Cria as posições validas
 gerarPosicoesArvores();
@@ -290,8 +289,8 @@ function gerenciarIluminacao() {
         luzDirecional.castShadow = true;
 
         // Otimização de resolução
-        luzDirecional.shadow.mapSize.width = 2048;
-        luzDirecional.shadow.mapSize.height = 2048;
+        luzDirecional.shadow.mapSize.width = 1024;
+        luzDirecional.shadow.mapSize.height = 1024;
 
         // Evita artefatos e sombras piscando
         luzDirecional.shadow.bias = -0.0001;
@@ -318,8 +317,6 @@ function gerenciarIluminacao() {
         scene.add(luzDirecional.target);
     }
 
-    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 30);
-    luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 30);
     luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 30);
     luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 30);
 }
