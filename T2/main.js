@@ -157,15 +157,14 @@ const planoTerreno = new THREE.Mesh(geometriaPlano, materialPlano);
 
 // Deita o plano do terreno
 planoTerreno.rotation.x = -Math.PI / 2;
-planoTerreno.receiveShadow = true; // permitir sombra no terreno
+planoTerreno.receiveShadow = true; // Permite sombra no terreno
 scene.add(planoTerreno);
 
 // ÁRVORES
 const quantidadeArvores = 200;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
-gerarPosicoesArvores();
 
-// Cria as posições validas
+// Cria as posições válidas
 gerarPosicoesArvores();
 
 listaArvores.forEach((arvore, indice) => {
@@ -192,7 +191,6 @@ listaArvores.forEach((arvore, indice) => {
 });
 
 // ILUMINAÇÃO
-// Criando iluminação direcional
 let luzDirecional;
 // Cria a luz ambiente
 const luzAmbiente = new THREE.AmbientLight(0xffffff, 1.2);
@@ -200,7 +198,7 @@ scene.add(luzAmbiente);
 
 // INIMIGOS
 let modeloInimigoBase = null;
-const escalaOriginalInimigo = 4;
+const escalaOriginalInimigo = 5;
 
 const loader = new GLTFLoader();
 loader.load('./assets/dronebranco.glb', function (gltf) {
@@ -290,8 +288,8 @@ function gerenciarIluminacao() {
         luzDirecional.castShadow = true;
 
         // Otimização de resolução
-        luzDirecional.shadow.mapSize.width = 2048;
-        luzDirecional.shadow.mapSize.height = 2048;
+        luzDirecional.shadow.mapSize.width = 512;
+        luzDirecional.shadow.mapSize.height = 512;
 
         // Evita artefatos e sombras piscando
         luzDirecional.shadow.bias = -0.0001;
@@ -328,8 +326,8 @@ function atualizarMira() {
     raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
 
     // Limitação espacial da mira na tela
-    if (cuboMira.position.y < 12) cuboMira.position.y = 12;
-    if (cuboMira.position.y > 55) cuboMira.position.y = 55;
+    if (cuboMira.position.y < 10) cuboMira.position.y = 10;
+    if (cuboMira.position.y > 40) cuboMira.position.y = 40;
     if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = limiteXDinamico;
     if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -limiteXDinamico;
 }
@@ -440,51 +438,39 @@ function animarAviao() {
     const pontoDestino = cuboMira.position;
     vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
 
-    // .lerp move o avião suavemente até a mira, criando um atraso (efeito de inércia/peso)
+    // Move o avião suavemente até a mira
     aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento);
 
-    // EIXO X
-    const desvioLateral = pontoDestino.x - aviao.position.x; // calcula desvio lateral
-
-    // EIXO Y (SUBIDA E DESCIDA )
-    // Subida do avião
+    // EIXO Y
     // Calcula a diferença vertical entre a mira e o avião
     const diferencaY = pontoDestino.y - aviao.position.y;
 
-    // Multiplicado por 0.02 para a inclinação suave
+    // Cria o desvio de X baseado nessa diferença
     let desvioX = diferencaY * 0.02;
 
-    // Trava para o bico do avião não inclinar excessivamente
+    // Trava para o bico não inclinar excessivamente
     if (desvioX > 0.3) desvioX = 0.3;
     if (desvioX < -0.3) desvioX = -0.3;
 
-    // Somar ao -Math.PI/2 faz a frente do avião levantar quando a mira está acima
     const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
-    // Suaviza a rotação em X para acompanhar o movimento suavemente
     aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
 
-    // EIXO Z (INCLINAÇÃO E ROTAÇÕES LATERAIS)
-    let inclinacaoZ = desvioLateral * 0.015; // transforma o desvio em angulo de inclinação
+    // EIXO X
+    // Calcula a diferença horizontal entre a mira e o avião
+    const diferencaX = pontoDestino.x - aviao.position.x;
 
-    // Trava de segurança para o avião não virar
-    if (inclinacaoZ > 0.35) inclinacaoZ = 0.35;
-    if (inclinacaoZ < -0.35) inclinacaoZ = -0.35;
+    // Cria o desvio de Y baseado nessa diferença
+    let desvioY = diferencaX * 0.02;
 
-    // Define os limites máximos de inclinação (em radianos)
-    const INCLINACAO_MAXIMA = 1;
-    const LIMITE_MIN = Math.PI - INCLINACAO_MAXIMA;
-    const LIMITE_MAX = Math.PI + INCLINACAO_MAXIMA;
+    // Trava para o corpo não inclinar excessivamente
+    if (desvioY > 1) desvioY = 1;
+    if (desvioY < -1) desvioY = -1;
 
-    // Calcula a rotação desejada com base na distância do destino
-    let rotacaoAlvo = Math.PI + (pontoDestino.x - aviao.position.x) * 0.02;
+    // Soma a base (Math.PI) com o desvio calculado
+    const bicoRotacaoAlvoY = Math.PI + desvioY;
+    aviao.rotation.y += (bicoRotacaoAlvoY - aviao.rotation.y) * 0.1;
 
-    // Se passar do limite, ele simplesmente "para" na borda, sem pular de volta
-    rotacaoAlvo = Math.max(LIMITE_MIN, Math.min(rotacaoAlvo, LIMITE_MAX));
-
-    // Aplica a interpolação suave (Lerp) que você já estava usando
-    aviao.rotation.y += (rotacaoAlvo - aviao.rotation.y) * 0.1;
-
-    // ANIMAÇÃO DA HÉLICE
+    // Animação da hélice
     helice.rotation.y += Math.PI / 10;
 }
 
@@ -499,7 +485,7 @@ function atualizarTerreno() {
     const deslocamentoZ = camera.position.z - (comprimentoTerreno / 2) + 60;
     planoTerreno.position.z = deslocamentoZ;
 
-    // Acessa o array da GPU direto na memória para alterar a altura (muito mais otimizado)
+    // Acessa o array da GPU direto na memória para alterar a altura
     const arrayPosicoes = geometriaPlano.attributes.position.array;
 
     for (let linha = 0; linha <= segmentosTerreno; linha++) {
@@ -522,8 +508,8 @@ function atualizarTerreno() {
 }
 
 function gerarPosicoesArvores() {
-    const distanciaMinima = 20; //distancia entre arvores
-    const tentativasMaximas = 5000; //tentativas de verificação para arvores não ficarem grudadas
+    const distanciaMinima = 20; // Distância entre arvores
+    const tentativasMaximas = 5000; // Tentativas de verificação para árvores não ficarem sobrepostas
     let tentativas = 0;
 
     while (posicoesValidas.length < quantidadeArvores && tentativas < tentativasMaximas) {
@@ -532,7 +518,7 @@ function gerarPosicoesArvores() {
         const z = (Math.random() - 0.5) * comprimentoTerreno;
         const novaPosicao = new THREE.Vector2(x, z);
 
-        //faz a verificação com as demais posições
+        // Verifica as demais posições
         let muitoPerto = false;
         for (let i = 0; i < posicoesValidas.length; i++) {
             if (novaPosicao.distanceToSquared(posicoesValidas[i]) < (distanciaMinima * distanciaMinima)) {
@@ -571,14 +557,16 @@ function reposicionarArvores() {
 // INIMIGOS
 function criarInimigos(quantidade) {
     if (!modeloInimigoBase) return; // Segurança caso o modelo ainda não tenha carregado
+    let direcao = true;
 
     for (let i = 0; i < quantidade; i++) {
         // Clona o modelo base para não precisar carregar o arquivo várias vezes
         const inimigo = modeloInimigoBase.clone();
-        inimigo.userData = {morrendo: false, velocidadeX: 0};
+        inimigo.userData = {morrendo: false, velocidadeX: 0, origem: direcao};
         reposicionarInimigo(inimigo);
         scene.add(inimigo);
         listaInimigos.push(inimigo);
+        direcao = !direcao;
     }
 }
 
@@ -589,17 +577,20 @@ function reposicionarInimigo(inimigo) {
     inimigo.userData.morrendo = false;
 
     // Nascem bem longe no eixo Z para "surgirem" suavemente de dentro da névoa (fog)
-    inimigo.position.z = aviao.position.z - 100 - (Math.random() * 80);
+    const distanciaMinima = velocidadeDeslocamento > 1.2 ? 180 : 130;
+    inimigo.position.z = aviao.position.z - distanciaMinima - (Math.random() * 50);
 
-    // Posição X muito mais variada (podem nascer mais perto do centro ou mais nas pontas)
-    const ladoDireito = Math.random() > 0.5;
-    inimigo.position.x = ladoDireito ? (20 + Math.random() * 40) : (-20 - Math.random() * 40);
+    // Posição X
+    inimigo.position.x = inimigo.userData.origem ? (limiteXDinamico + 10) : -(limiteXDinamico + 10);
 
     // Velocidade aleatória, cruzando o campo de visão na diagonal oposta ao spawn
-    inimigo.userData.velocidadeX = (ladoDireito ? -1 : 1) * (0.1 + Math.random() * 0.25);
+    inimigo.userData.velocidadeX = (inimigo.userData.origem ? -1 : 1) * (0.2 + Math.random() * 0.25);
 
     // Altura aleatória aproveitando toda a área da mira (10 a 30)
-    inimigo.position.y = 10 + Math.random() * 20;
+    inimigo.position.y = 10 + Math.random() * 30;
+
+    // Alterna a origem do próximo inimigo
+    inimigo.userData.origem = !inimigo.userData.origem;
 }
 
 function atualizarInimigos() {
@@ -617,7 +608,7 @@ function atualizarInimigos() {
             inimigo.position.x += inimigo.userData.velocidadeX;
 
             // Reposiciona ao sair da tela pela lateral ou ficou pra trás da câmera
-            if (inimigo.position.x > 70 || inimigo.position.x < -70 || inimigo.position.z > camera.position.z) {
+            if (inimigo.position.x > limiteXDinamico*2 || inimigo.position.x < -limiteXDinamico*2 || inimigo.position.z > camera.position.z) {
                 reposicionarInimigo(inimigo);
             }
         }

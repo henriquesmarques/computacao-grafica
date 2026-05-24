@@ -68,25 +68,25 @@ export function criarArvore() {
  */
 export function criarAviao() {
     // Materiais
-    const materialAzul = setDefaultMaterial("rgb(23,62,125)");
-    const materialAmarelo = setDefaultMaterial("rgb(194,140,39)");
-    const materialVermelho = setDefaultMaterial("rgb(180, 30, 60)");
+    const cor_1 = setDefaultMaterial("#BA5624");
+    const cor_2 = setDefaultMaterial("#FCDE9C");
+    const cor_3 = setDefaultMaterial("#FFA552");
 
     // Corpo (Cilindro afilado em uma ponta)
     const geometriaCilindro = new THREE.CylinderGeometry(2, 1, 13);
-    const corpo = new THREE.Mesh(geometriaCilindro, materialAzul);
+    const corpo = new THREE.Mesh(geometriaCilindro, cor_1);
     corpo.rotation.x = Math.PI / 2;
 
     // Asa frontal (Esfera achatada)
     const geometriaEsfera = new THREE.SphereGeometry();
-    const asa = new THREE.Mesh(geometriaEsfera, materialAzul);
+    const asa = new THREE.Mesh(geometriaEsfera, cor_1);
     asa.scale.set(10, 0.5, 1.5);
     asa.rotation.x = -Math.PI / 2;
     corpo.add(asa);
 
     // Cauda Horizontal (Esfera achatada)
     const geometriaCaudaHoriz = new THREE.SphereGeometry();
-    const caudaHorizontal = new THREE.Mesh(geometriaCaudaHoriz, materialVermelho);
+    const caudaHorizontal = new THREE.Mesh(geometriaCaudaHoriz, cor_3);
     caudaHorizontal.scale.set(3.5, 0.4, 1);
     caudaHorizontal.position.set(0, -5.5, 0);
     caudaHorizontal.rotation.x = -Math.PI / 2;
@@ -94,7 +94,7 @@ export function criarAviao() {
 
     // Leme Vertical (Caixa alongada)
     const geometriaCaudaVert = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-    const caudaVertical = new THREE.Mesh(geometriaCaudaVert, materialAmarelo);
+    const caudaVertical = new THREE.Mesh(geometriaCaudaVert, cor_3);
     caudaVertical.scale.set(0.3, 2, 1.9);
     caudaVertical.position.set(0, -5.5, -1);
     caudaVertical.rotation.x = -Math.PI / 8;
@@ -102,7 +102,7 @@ export function criarAviao() {
 
     // Cabine (Meia esfera esticada)
     const geometriaCabine = new THREE.SphereGeometry(0.8);
-    const cabine = new THREE.Mesh(geometriaCabine, materialAmarelo);
+    const cabine = new THREE.Mesh(geometriaCabine, cor_2);
     cabine.scale.set(1.2, 1.2, 2.5);
     cabine.position.set(0, 0, -1.5);
     cabine.rotation.x = -Math.PI / 2;
@@ -110,7 +110,7 @@ export function criarAviao() {
 
     // Hélice frontal (Caixa achatada)
     const geometriaHelice = new THREE.BoxGeometry(1, 1, 1);
-    const helice = new THREE.Mesh(geometriaHelice, materialVermelho);
+    const helice = new THREE.Mesh(geometriaHelice, cor_3);
     helice.scale.set(5, 0.4, 0.1);
     helice.position.set(0, 6.6, 0);
     helice.rotation.x = -Math.PI / 2;
@@ -118,15 +118,15 @@ export function criarAviao() {
 
     // Miolo central da hélice (Esfera)
     const geometriaMiolo = new THREE.SphereGeometry();
-    const miolo = new THREE.Mesh(geometriaMiolo, materialAmarelo);
+    const miolo = new THREE.Mesh(geometriaMiolo, cor_2);
     miolo.scale.set(0.6, 0.6, 0.6);
     miolo.position.set(0, 6.7, 0);
     miolo.rotation.x = -Math.PI / 2;
     corpo.add(miolo);
 
-    // Efeito de movimento (Torus translúcido/fino simulando a hélice girando)
+    // Detalhe frontal do corpo do avião (Torus)
     const geometriaArco = new THREE.TorusGeometry(1.85, 0.14);
-    const arco = new THREE.Mesh(geometriaArco, materialVermelho);
+    const arco = new THREE.Mesh(geometriaArco, cor_3);
     arco.scale.set(1.1, 1.1, 0.01);
     arco.position.set(0, 6.6, 0);
     arco.rotation.x = -Math.PI / 2;
@@ -164,33 +164,47 @@ export function iniciarCamera(position) {
     return camera;
 }
 
-// ============================================================================
 // SISTEMA DE GERAÇÃO DE RUÍDO CONTÍNUO (FRACTAL VALUE NOISE / fBM)
-// ============================================================================
 
 /**
- * Função Hash: Gera um valor escalar pseudo-aleatório baseado em coordenadas 2D.
- * É determinística: para o mesmo (x, y), retorna sempre o mesmo valor.
+ * Calcula a elevação final (eixo Y) do terreno para coordenadas específicas do mundo.
+ * Aplica escalonamento e deslocamento (Offset) sobre o ruído fractal base.
  *
- * @param {number} x - Coordenada X
- * @param {number} y - Coordenada Y (ou Z no espaço 3D)
- * @returns {number} Um valor entre 0 e 1.
+ * @param {number} coordenadaMundoX - Posição X absoluta no cenário.
+ * @param {number} coordenadaMundoZ - Posição Z absoluta no cenário.
+ * @returns {number} A altura final para o vértice do terreno na posição informada.
  */
-function gerarHash(x, y) {
-    let valor = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
-    return valor - Math.floor(valor);
+export function calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ) {
+    const ruido = gerarRuidoFractal(coordenadaMundoX, coordenadaMundoZ);
+    // Mapeamento: Extrapola de [0, 1] para amplitudes topográficas visíveis (de -25 a +10 unidades de altura)
+    return -25 + ruido * 35;
 }
 
 /**
- * Interpolação Linear (Lerp): Transita entre dois valores baseando-se num fator.
+ * Fractional Brownian Motion (fBm) / Ruído Fractal: Agrega (soma) múltiplas camadas
+ * (oitavas) de Value Noise para gerar terrenos complexos e naturais.
  *
- * @param {number} inicio - Valor inicial
- * @param {number} fim - Valor final
- * @param {number} fator - Porcentagem da transição (0 a 1)
- * @returns {number} O valor interpolado.
+ * @param {number} x - Coordenada X global
+ * @param {number} y - Coordenada Y (Z) global
+ * @param {number} [oitavas=4] - Quantidade de camadas de detalhe (quanto maior, mais detalhado e custoso)
+ * @returns {number} O ruído acumulado e normalizado (0 a 1).
  */
-function interpolacaoLinear(inicio, fim, fator) {
-    return inicio + fator * (fim - inicio);
+function gerarRuidoFractal(x, y, oitavas = 4) {
+    let valorAcumulado = 0;
+    let amplitudeTotal = 1;
+    let frequenciaTotal = 0.015; // Define a escala macro das montanhas
+    let somaPesos = 0;
+
+    for (let iteracao = 0; iteracao < oitavas; iteracao++) {
+        valorAcumulado += gerarRuido2D(x * frequenciaTotal, y * frequenciaTotal) * amplitudeTotal;
+        somaPesos += amplitudeTotal;
+
+        amplitudeTotal *= 0.5;  // Reduz o peso/altura dos micro-detalhes (Persistência)
+        frequenciaTotal *= 2.0; // Aumenta a quantidade de detalhes / imperfeições (Lacunaridade)
+    }
+
+    // Normaliza para manter o limite de escala estrito
+    return valorAcumulado / somaPesos;
 }
 
 /**
@@ -226,42 +240,26 @@ function gerarRuido2D(x, y) {
 }
 
 /**
- * Fractional Brownian Motion (fBm) / Ruído Fractal: Agrega (soma) múltiplas camadas
- * (oitavas) de Value Noise para gerar terrenos complexos e naturais.
+ * Função Hash: Gera um valor escalar pseudo-aleatório baseado em coordenadas 2D.
+ * É determinística: para o mesmo (x, y), retorna sempre o mesmo valor.
  *
- * @param {number} x - Coordenada X global
- * @param {number} y - Coordenada Y (Z) global
- * @param {number} [oitavas=4] - Quantidade de camadas de detalhe (quanto maior, mais detalhado e custoso)
- * @returns {number} O ruído acumulado e normalizado (0 a 1).
+ * @param {number} x - Coordenada X
+ * @param {number} y - Coordenada Y (ou Z no espaço 3D)
+ * @returns {number} Um valor entre 0 e 1.
  */
-function gerarRuidoFractal(x, y, oitavas = 4) {
-    let valorAcumulado = 0;
-    let amplitudeTotal = 1;
-    let frequenciaTotal = 0.015; // Define a escala macro das montanhas
-    let somaPesos = 0;
-
-    for (let iteracao = 0; iteracao < oitavas; iteracao++) {
-        valorAcumulado += gerarRuido2D(x * frequenciaTotal, y * frequenciaTotal) * amplitudeTotal;
-        somaPesos += amplitudeTotal;
-
-        amplitudeTotal *= 0.5;  // Reduz o peso/altura dos micro-detalhes (Persistência)
-        frequenciaTotal *= 2.0; // Aumenta a quantidade de detalhes / imperfeições (Lacunaridade)
-    }
-
-    // Normaliza para manter o limite de escala estrito
-    return valorAcumulado / somaPesos;
+function gerarHash(x, y) {
+    let valor = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+    return valor - Math.floor(valor);
 }
 
 /**
- * Calcula a elevação final (eixo Y) do terreno para coordenadas específicas do mundo.
- * Aplica escalonamento e deslocamento (Offset) sobre o ruído fractal base.
+ * Interpolação Linear (Lerp): Transita entre dois valores baseando-se num fator.
  *
- * @param {number} coordenadaMundoX - Posição X absoluta no cenário.
- * @param {number} coordenadaMundoZ - Posição Z absoluta no cenário.
- * @returns {number} A altura final para o vértice do terreno na posição informada.
+ * @param {number} inicio - Valor inicial
+ * @param {number} fim - Valor final
+ * @param {number} fator - Porcentagem da transição (0 a 1)
+ * @returns {number} O valor interpolado.
  */
-export function calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ) {
-    const ruido = gerarRuidoFractal(coordenadaMundoX, coordenadaMundoZ);
-    // Mapeamento: Extrapola de [0, 1] para amplitudes topográficas visíveis (de -15 a +10 unidades de altura)
-    return -15 + ruido * 25;
+function interpolacaoLinear(inicio, fim, fator) {
+    return inicio + fator * (fim - inicio);
 }
