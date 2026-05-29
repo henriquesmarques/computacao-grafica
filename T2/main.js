@@ -7,7 +7,8 @@ import {
     criarAviao,
     criarArvores,
     iniciarCamera,
-    calcularAlturaTerreno
+    calcularAlturaTerreno,
+    criarMira
 } from "./util.js";
 
 // VARIÁVEIS GLOBAIS
@@ -49,10 +50,6 @@ scene.add(camera);
 // Limita o movimento da mira dependendo da proporção da tela
 limiteXDinamico = Math.max(25, Math.min(55, (window.innerWidth / window.innerHeight) * 24));
 
-window.addEventListener('resize', function () {
-    onWindowResize(camera, renderer)
-}, false);
-
 // STATUS (FPS)
 const status = new Stats();
 document.getElementById("webgl-output").appendChild(status.domElement);
@@ -69,83 +66,22 @@ scene.add(aviao);
 
 // --- TRABALHO 2 ---
 
-// CUBO DE MIRA
-const geometriaMira = new THREE.BoxGeometry(5, 5, 5);
-const materialMira = new THREE.MeshBasicMaterial({
-    color: 0x00ff00,
-    wireframe: true,
-    wireframeLinewidth: 1
-});
-const cuboMira = new THREE.Mesh(geometriaMira, materialMira)
-cuboMira.position.set(0, 10, -65);
-scene.add(cuboMira);
+// MIRA
+const mira = criarMira(0x000000);
+mira.position.set(0, 10, -65);
+scene.add(mira);
 
 // Oculta o cursor inicialmente
 document.body.style.cursor = 'none';
 renderer.domElement.style.cursor = 'none';
 
 // INTERAÇÃO COM RAYCASTER
-const raycaster = new THREE.Raycaster(); // Lança um raio 3D a partir do mouse
+const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 65); // Plano onde a mira desliza
+const paredeInvisivel = new THREE.Plane(new THREE.Vector3(0, 0, 1), 65);
 
-window.addEventListener('mousemove', function (event) {
-    // Normaliza a posição do mouse (de -1 a 1)
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-}, false);
-
-// Eventos de clique para tiro contínuo e retomada de pausa
-window.addEventListener('mousedown', function (event) {
-    if (!animacaoAtiva) {
-        retomarSimulacao();
-    } else {
-        if (event.button === 0) mousePressionado = true; // Botão esquerdo atira
-    }
-}, false);
-
-window.addEventListener('mouseup', function (event) {
-    if (event.button === 0) mousePressionado = false;
-}, false);
-
-// CONTROLES DE TECLADO
-window.addEventListener('keydown', function (event) {
-    switch (event.key) {
-        case '1':
-            velocidadeDeslocamento = 0.6;
-            break;
-        case '2':
-            velocidadeDeslocamento = 1.2;
-            break;
-        case '3':
-            velocidadeDeslocamento = 1.8;
-            break;
-        case 'Escape':
-            pausarSimulacao();
-            break;
-    }
-}, false);
-
-// Responsividade
-window.addEventListener('resize', function () {
-    // Atualiza o aspecto da câmera
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    // Atualiza o tamanho do renderizador
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // Calcula o limiteXDinamico no início do jogo
-    const aspecto = camera.aspect;
-    const fovRadiano = (camera.fov * Math.PI) / 180;
-
-    // Calcula a largura visível total
-    const distanciaCameraAviao = Math.abs(camera.position.z - aviao.position.z);
-    limiteXDinamico = Math.tan(fovRadiano / 2) * distanciaCameraAviao * aspecto;
-
-    if (typeof onWindowResize === 'function') {
-        onWindowResize(camera, renderer);
-    }
-}, false);
+// Escuta interações com a janela
+configurarJanela();
 
 // CONFIGURAÇÕES DO TERRENO
 const comprimentoTerreno = 300;
@@ -161,7 +97,7 @@ planoTerreno.receiveShadow = true; // Permite sombra no terreno
 scene.add(planoTerreno);
 
 // ÁRVORES
-const quantidadeArvores = 200;
+const quantidadeArvores = 150;
 const listaArvores = criarArvores(comprimentoTerreno, larguraTerreno, quantidadeArvores);
 
 // Cria as posições válidas
@@ -271,14 +207,14 @@ function pausarSimulacao() {
     animacaoAtiva = false;
     document.body.style.cursor = 'default';
     renderer.domElement.style.cursor = 'default';
-    cuboMira.visible = false;
+    mira.visible = false;
 }
 
 function retomarSimulacao() {
     animacaoAtiva = true;
     document.body.style.cursor = 'none';
     renderer.domElement.style.cursor = 'none';
-    cuboMira.visible = true;
+    mira.visible = true;
 }
 
 function gerenciarIluminacao() {
@@ -288,8 +224,8 @@ function gerenciarIluminacao() {
         luzDirecional.castShadow = true;
 
         // Otimização de resolução
-        luzDirecional.shadow.mapSize.width = 512;
-        luzDirecional.shadow.mapSize.height = 512;
+        luzDirecional.shadow.mapSize.width = 1700;
+        luzDirecional.shadow.mapSize.height = 1700;
 
         // Evita artefatos e sombras piscando
         luzDirecional.shadow.bias = -0.0001;
@@ -323,19 +259,19 @@ function gerenciarIluminacao() {
 function atualizarMira() {
     // Converte a posição 2D do mouse para um alvo 3D na parede invisível
     raycaster.setFromCamera(mouse, camera);
-    raycaster.ray.intersectPlane(paredeInvisivel, cuboMira.position);
+    raycaster.ray.intersectPlane(paredeInvisivel, mira.position);
 
     // Limitação espacial da mira na tela
-    if (cuboMira.position.y < 10) cuboMira.position.y = 10;
-    if (cuboMira.position.y > 40) cuboMira.position.y = 40;
-    if (cuboMira.position.x > limiteXDinamico) cuboMira.position.x = limiteXDinamico;
-    if (cuboMira.position.x < -limiteXDinamico) cuboMira.position.x = -limiteXDinamico;
+    if (mira.position.y < 10) mira.position.y = 10;
+    if (mira.position.y > 40) mira.position.y = 40;
+    if (mira.position.x > limiteXDinamico) mira.position.x = limiteXDinamico;
+    if (mira.position.x < -limiteXDinamico) mira.position.x = -limiteXDinamico;
 }
 
 function atualizarCamera() {
     // Movimentação contínua para frente
     aviao.position.z -= velocidadeDeslocamento;
-    cuboMira.position.z -= velocidadeDeslocamento;
+    mira.position.z -= velocidadeDeslocamento;
     camera.position.z -= velocidadeDeslocamento;
 
     // Câmera acompanha o eixo X do avião lateralmente
@@ -435,7 +371,7 @@ function verificarDanoNosInimigos() {
 function animarAviao() {
     if (!animacaoAtiva) return;
 
-    const pontoDestino = cuboMira.position;
+    const pontoDestino = mira.position;
     vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
 
     // Move o avião suavemente até a mira
@@ -466,7 +402,7 @@ function animarAviao() {
     if (desvioY > 1) desvioY = 1;
     if (desvioY < -1) desvioY = -1;
 
-    // Soma a base (Math.PI) com o desvio calculado
+    // Soma a base (Math.PI) com o desvio calculated
     const bicoRotacaoAlvoY = Math.PI + desvioY;
     aviao.rotation.y += (bicoRotacaoAlvoY - aviao.rotation.y) * 0.1;
 
@@ -619,7 +555,7 @@ function atualizarInimigos() {
 function atirarPlayer() {
     // Criação do laser do player
     const geometriaTiro = new THREE.PlaneGeometry(1.5, 12.0); // Retângulo alongado
-    const materialTiro = new THREE.MeshBasicMaterial({color: 0x00ff00, side: THREE.DoubleSide});
+    const materialTiro = new THREE.MeshBasicMaterial({color: 0xFCDE9C, side: THREE.DoubleSide});
     const projetil = new THREE.Mesh(geometriaTiro, materialTiro);
 
     geometriaTiro.rotateX(Math.PI / 2); // Rotação para o retângulo ficar deitado
@@ -627,10 +563,10 @@ function atirarPlayer() {
 
     // Normaliza o vetor (tamanho 1) para usar apenas como apontador de direção
     const direcao = new THREE.Vector3();
-    direcao.subVectors(cuboMira.position, aviao.position).normalize();
+    direcao.subVectors(mira.position, aviao.position).normalize();
     projetil.userData.direcao = direcao;
 
-    projetil.lookAt(cuboMira.position); // Gira o tiro em direção ao alvo
+    projetil.lookAt(mira.position); // Gira o tiro em direção ao alvo
 
     scene.add(projetil);
     listaProjeteisPlayer.push(projetil);
@@ -666,4 +602,68 @@ function removerProjetilDaCena(projetil, lista, index) {
     if (projetil.material) projetil.material.dispose();
 
     lista.splice(index, 1);
+}
+
+function configurarJanela() {
+    window.addEventListener('resize', function () {
+        onWindowResize(camera, renderer)
+    }, false);
+
+    window.addEventListener('mousemove', function (event) {
+        // Normaliza a posição do mouse (de -1 a 1)
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }, false);
+
+    // Eventos de clique para tiro contínuo e retomada de pausa
+    window.addEventListener('mousedown', function (event) {
+        if (!animacaoAtiva) {
+            retomarSimulacao();
+        } else {
+            if (event.button === 0) mousePressionado = true; // Botão esquerdo atira
+        }
+    }, false);
+
+    window.addEventListener('mouseup', function (event) {
+        if (event.button === 0) mousePressionado = false;
+    }, false);
+
+    // CONTROLES DE TECLADO
+    window.addEventListener('keydown', function (event) {
+        switch (event.key) {
+            case '1':
+                velocidadeDeslocamento = 0.6;
+                break;
+            case '2':
+                velocidadeDeslocamento = 1.2;
+                break;
+            case '3':
+                velocidadeDeslocamento = 1.8;
+                break;
+            case 'Escape':
+                pausarSimulacao();
+                break;
+        }
+    }, false);
+
+    // Responsividade
+    window.addEventListener('resize', function () {
+        // Atualiza o aspecto da câmera
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        // Atualiza o tamanho do renderizador
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Calcula o limiteXDinamico no início do jogo
+        const aspecto = camera.aspect;
+        const fovRadiano = (camera.fov * Math.PI) / 180;
+
+        // Calcula a largura visível total
+        const distanciaCameraAviao = Math.abs(camera.position.z - aviao.position.z);
+        limiteXDinamico = Math.tan(fovRadiano / 2) * distanciaCameraAviao * aspecto;
+
+        if (typeof onWindowResize === 'function') {
+            onWindowResize(camera, renderer);
+        }
+    }, false);
 }

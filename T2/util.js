@@ -151,6 +151,36 @@ export function criarArvores(comprimentoPlano, larguraPlano, total) {
     return arvores;
 }
 
+export function criarMira(color) {
+    const verticesMira = [];
+    const tam = 2.5;       // Tamanho total da mira
+    const compLinha = 0.8; // Comprimento de cada perna do L
+
+    verticesMira.push(
+        // Canto Superior Esquerdo
+        -tam, tam, 0,  -tam + compLinha, tam, 0,
+        -tam, tam, 0,  -tam, tam - compLinha, 0,
+
+        // Canto Superior Direito
+        tam, tam, 0,   tam - compLinha, tam, 0,
+        tam, tam, 0,   tam, tam - compLinha, 0,
+
+        // Canto Inferior Esquerdo
+        -tam, -tam, 0, -tam + compLinha, -tam, 0,
+        -tam, -tam, 0, -tam, -tam + compLinha, 0,
+
+        // Canto Inferior Direito
+        tam, -tam, 0,  tam - compLinha, -tam, 0,
+        tam, -tam, 0,  tam, -tam + compLinha, 0
+    );
+
+    const geometriaMira = new THREE.BufferGeometry();
+    geometriaMira.setAttribute('position', new THREE.Float32BufferAttribute(verticesMira, 3));
+
+    const materialMira = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
+    return new THREE.LineSegments(geometriaMira, materialMira);
+}
+
 /**
  * Configura e inicializa a câmera de perspectiva da cena.
  *
@@ -163,6 +193,8 @@ export function iniciarCamera(position) {
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     return camera;
 }
+
+
 
 // SISTEMA DE GERAÇÃO DE RUÍDO CONTÍNUO (FRACTAL VALUE NOISE / fBM)
 
