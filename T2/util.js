@@ -194,8 +194,6 @@ export function iniciarCamera(position) {
     return camera;
 }
 
-
-
 // SISTEMA DE GERAÇÃO DE RUÍDO CONTÍNUO (FRACTAL VALUE NOISE / fBM)
 
 /**
