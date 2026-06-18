@@ -319,8 +319,10 @@ function configurarJanela() {
                 break;
             case 'g':
                 statusJogo.invencivel = !statusJogo.invencivel;
+                break;
             case 'G':
                 statusJogo.invencivel = !statusJogo.invencivel;
+                break;
         }
     }, false);
 
