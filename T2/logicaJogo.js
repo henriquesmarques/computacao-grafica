@@ -80,47 +80,50 @@ export function atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidade
     paredeInvisivel.constant = -camera.position.z + 65 + 30;
 }
 
-export function animarAviao(animacaoAtiva, aviao, helice, mira, velocidadeDeslocamento, vetorInterpolacao) {
-    if (!animacaoAtiva) return;
+export function animarAviao(animacaoAtiva, aviao, mira, velocidadeDeslocamento, vetorInterpolacao) {
+   if (!animacaoAtiva) return;
 
-    const pontoDestino = mira.position;
-    vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
+   const pontoDestino = mira.position;
+   vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
 
-    // Move o avião suavemente até a mira
-    aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento);
+   // Move o avião suavemente até a mira
+   aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento);
 
-    // EIXO Y
-    // Calcula a diferença vertical entre a mira e o avião
-    const diferencaY = pontoDestino.y - aviao.position.y;
+   // EIXO Y
+   // Calcula a diferença vertical entre a mira e o avião
+   const diferencaY = pontoDestino.y - aviao.position.y;
 
-    // Cria o desvio de X baseado nessa diferença
-    let desvioX = diferencaY * 0.02;
+   // Cria o desvio de X baseado nessa diferença
+   let desvioX = diferencaY * 0.02;
 
-    // Trava para o bico não inclinar excessivamente
-    if (desvioX > 0.3) desvioX = 0.3;
-    if (desvioX < -0.3) desvioX = -0.3;
+   // Trava para o bico não inclinar excessivamente
+   if (desvioX > 0.5) desvioX = 0.5;
+   if (desvioX < -0.5) desvioX = -0.5;
 
-    const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
-    aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
+   const funcaoBaseX = 0;
+   const rotacaoAlvoX = funcaoBaseX + desvioX; //subida e descida
+   aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
 
-    // EIXO X
-    // Calcula a diferença horizontal entre a mira e o avião
-    const diferencaX = pontoDestino.x - aviao.position.x;
+   // EIXO X
+   // Calcula a diferença horizontal entre a mira e o avião
+   const diferencaX = pontoDestino.x - aviao.position.x;
 
-    // Cria o desvio de Y baseado nessa diferença
-    let desvioY = diferencaX * 0.02;
+   // Cria o desvio de Y baseado nessa diferença
+   let desvioY = diferencaX * 0.02;
 
-    // Trava para o corpo não inclinar excessivamente
-    if (desvioY > 1) desvioY = 1;
-    if (desvioY < -1) desvioY = -1;
 
-    // Soma a base (Math.PI) com o desvio calculated
-    const bicoRotacaoAlvoY = Math.PI + desvioY;
-    aviao.rotation.y += (bicoRotacaoAlvoY - aviao.rotation.y) * 0.1;
+   // Trava para o corpo não inclinar excessivamente
+   if (desvioY > 1) desvioY = 1;
+   if (desvioY < -1) desvioY = -1;
 
-    // Animação da hélice
-    helice.rotation.y += Math.PI / 10;
+   // Soma a base (Math.PI) com o desvio calculated
+   const bicoRotacaoAlvoY = Math.PI - desvioY;
+   aviao.rotation.y += (bicoRotacaoAlvoY - aviao.rotation.y) * 0.1;
+
+   const inclinacaoAsaZ = desvioY ;
+   aviao.rotation.z += (inclinacaoAsaZ - aviao.rotation.z) * 0.1;
 }
+
 
 export function atualizarTerreno(planoTerreno, geometriaPlano, camera, comprimentoTerreno, segmentosTerreno) {
     // Move o plano inteiro para frente junto com a câmera

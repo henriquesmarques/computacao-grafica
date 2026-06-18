@@ -71,14 +71,7 @@ const status = new Stats();
 document.getElementById("webgl-output").appendChild(status.domElement);
 
 // AVIÃO
-const objetoAviao = criarAviao();
-const aviao = objetoAviao.corpo;
-const helice = objetoAviao.helice;
-
-// Deita o avião para ficar paralelo ao chão e de frente pra tela
-aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
-aviao.position.set(0, 10, -90);
-scene.add(aviao);
+let aviao = null;
 
 // --- TRABALHO 2 ---
 
@@ -151,39 +144,62 @@ scene.add(luzAmbiente);
 // INIMIGOS
 let modeloInimigoBase = null;
 const escalaOriginalInimigo = 5;
-
 const loader = new GLTFLoader();
-loader.load('./assets/dronebranco.glb', function (gltf) {
-    modeloInimigoBase = gltf.scene;
+function carregarInimigos() {
+   loader.load('./assets/dronebranco.glb', function (gltf) {
+       let modeloInimigoBase = gltf.scene;
 
-    // Ativa as sombras em todas as partes da malha do drone
-    modeloInimigoBase.traverse(function (child) {
-        if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-        }
-    });
 
-    // Só cria os inimigos depois do modelo carregar
-    criarInimigos(scene, modeloInimigoBase, listaInimigos, 2, escalaOriginalInimigo, velocidadeDeslocamento, limiteXDinamico, aviao);
+       modeloInimigoBase.traverse(function (child) {
+           if (child.isMesh) {
+               child.castShadow = true;
+               child.receiveShadow = true;
+           }
+       });
+       // Cria os inimigos na cena usando a lista global
+       criarInimigos(scene, modeloInimigoBase, listaInimigos, 2, escalaOriginalInimigo, velocidadeDeslocamento, limiteXDinamico, aviao);
+      
+       // Liga a interface e o loop do jogo agora que tudo carregou
+       construirInterface();
+       renderizar();
+   }, undefined, function (error) {
+       console.error('Erro ao carregar o modelo do drone:', error);
+   });
+}
+
+loader.load('./assets/aviao.gltf', function (gltf) {
+const modeloAviao = gltf.scene;
+   modeloAviao.traverse(function (child) {
+       if (child.isMesh) {
+           child.castShadow = true;
+           child.receiveShadow = true;
+       }
+   });
+
+   // Salva o modelo na variável
+   aviao = modeloAviao;
+   aviao.scale.set(2, 2, 2);
+   aviao.rotation.set(Math.PI / 2, Math.PI, 0);
+   aviao.position.set(0, 10, -90);
+   scene.add(aviao);
+
+   // Só agora que o aviao existe e tem .position, chamamos os inimigos
+   carregarInimigos();
+
 }, undefined, function (error) {
-    console.error('Erro ao carregar o modelo do drone:', error);
+   console.error('Erro ao carregar o modelo do avião:', error);
 });
-
-construirInterface();
-renderizar();
 
 function renderizar() {
     requestAnimationFrame(renderizar);
     const deltaTime = relogio.getDelta();
-
     if (animacaoAtiva) {
         // Atualização de Posições e Controles
         atualizarMira(raycaster, mouse, camera, paredeInvisivel, mira, limiteXDinamico);
         atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidadeDeslocamento);
 
         // Animações e Cenário
-        animarAviao(animacaoAtiva, aviao, helice, mira, velocidadeDeslocamento, vetorInterpolacao);
+        animarAviao(animacaoAtiva, aviao, mira, velocidadeDeslocamento, vetorInterpolacao);
         atualizarTerreno(planoTerreno, geometriaPlano, camera, comprimentoTerreno, segmentosTerreno);
         reposicionarArvores(listaArvores, posicoesValidas, camera, comprimentoTerreno);
         atualizarInimigos(listaInimigos, camera, limiteXDinamico, escalaOriginalInimigo, velocidadeDeslocamento, aviao);
