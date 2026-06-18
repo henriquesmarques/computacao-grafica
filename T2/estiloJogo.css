@@ -75,3 +75,24 @@
 #btn-reiniciar:hover {
     background-color: #cc0000;
 }
+
+#texto-invencivel {
+    position: fixed;
+    bottom: 25px; /* Alinhado na mesma altura da barra de vida */
+    right: 20px;  /* Fixado no canto direito */
+    color: #000000; /* Azul neon chamativo */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: bold;
+    font-size: 16px;
+    letter-spacing: 2px; /* Espaçamento entre as letras */
+    text-shadow: 0 0 10px #000000; /* Efeito de brilho neon */
+    z-index: 1000; /* Garante que fica por cima do Canvas do jogo */
+    
+    /* Opcional: Uma animação simples para o texto ficar piscando suavemente */
+    animation: piscarTexto 1.5s infinite alternate;
+}
+
+@keyframes piscarTexto {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+}

@@ -88,6 +88,8 @@ const statusJogo = {
     tirosSofridos: 0,
     invencivel: false // Começa desativado
 };
+const indicadorTexto = document.getElementById("texto-invencivel");
+
 
 // INTERAÇÃO COM RAYCASTER
 const raycaster = new THREE.Raycaster();
@@ -149,6 +151,7 @@ scene.add(luzAmbiente);
 // INIMIGOS
 let modeloInimigoBase = null;
 const escalaOriginalInimigo = 5;
+
 const loader = new GLTFLoader();
 function carregarInimigos() {
    loader.load('./assets/dronebranco.glb', function (gltf) {
@@ -319,9 +322,23 @@ function configurarJanela() {
                 break;
             case 'g':
                 statusJogo.invencivel = !statusJogo.invencivel;
+                if (indicadorTexto) {
+                    if (statusJogo.invencivel) {
+                        indicadorTexto.style.display = "block"; // Mostra o texto no canto direito
+                    } else {
+                        indicadorTexto.style.display = "none";  // Esconde o texto ao voltar ao normal
+                    }
+                }
                 break;
             case 'G':
                 statusJogo.invencivel = !statusJogo.invencivel;
+                if (indicadorTexto) {
+                    if (statusJogo.invencivel) {
+                        indicadorTexto.style.display = "block"; // Mostra o texto no canto direito
+                    } else {
+                        indicadorTexto.style.display = "none";  // Esconde o texto ao voltar ao normal
+                    }
+                }
                 break;
         }
     }, false);
