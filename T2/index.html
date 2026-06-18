@@ -6,6 +6,10 @@
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../html/resources/default.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../html/resources/default.css">
+    <link rel="stylesheet" href="estiloJogo.css">
 </head>
 
 <body>
@@ -17,6 +21,20 @@
 
 <div id="webgl-output">
     <script type="module" src="main.js"></script>
+</div>
+<div id="container-vida">
+    <span id="icone-coracao">❤️</span>
+    <div id="barra-fundo">
+        <div id="barra-preenchimento"></div>
+    </div>
+</div>
+
+<div id="tela-game-over">
+    <div class="modal-conteudo">
+        <h2>FIM DE JOGO</h2>
+        <p>Seu avião levou 20 tiros!</p>
+        <button id="btn-reiniciar">Reiniciar Jogo</button>
+    </div>
 </div>
 </body>
 </html>

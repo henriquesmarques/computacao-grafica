@@ -111,7 +111,6 @@ export function animarAviao(animacaoAtiva, aviao, mira, velocidadeDeslocamento, 
    // Cria o desvio de Y baseado nessa diferença
    let desvioY = diferencaX * 0.02;
 
-
    // Trava para o corpo não inclinar excessivamente
    if (desvioY > 1) desvioY = 1;
    if (desvioY < -1) desvioY = -1;
@@ -314,6 +313,7 @@ function removerProjetilDaCena(scene, projetil, lista, index) {
 }
 
 export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento) {
+
     for (let i = listaProjeteis.length - 1; i >= 0; i--) {
         const projetil = listaProjeteis[i];
         projetil.position.addScaledVector(projetil.userData.direcao, 1.5 + (velocidadeDeslocamento * 0.5));
@@ -321,11 +321,14 @@ export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbP
         bbProjetilAux.setFromObject(projetil);
 
         if (bbProjetilAux.intersectsBox(bbAviao)) {
+            if (statusJogo.invencivel) {
+                removerProjetilDaCena(scene, projetil, listaProjeteis, i);
+                continue; 
+            }
             statusJogo.tirosSofridos++; // Atualiza automaticamente no GUI
             removerProjetilDaCena(scene, projetil, listaProjeteis, i);
             continue;
         }
-
         // Limpa projéteis muito distantes
         if (projetil.position.distanceTo(aviao.position) > 300) {
             removerProjetilDaCena(scene, projetil, listaProjeteis, i);
@@ -366,3 +369,4 @@ export function verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimi
         }
     }
 }
+

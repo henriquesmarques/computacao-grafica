@@ -52,7 +52,6 @@ const cadenciaTiroInimigos = 1;
 let mousePressionado = false;
 let tempoDecorridoTiroPlayer = 0;
 const cadenciaTiroPlayer = 0.15;
-const statusJogo = {tirosSofridos: 0};
 
 // --- TRABALHO 1 ---
 
@@ -83,6 +82,12 @@ scene.add(mira);
 // Oculta o cursor inicialmente
 document.body.style.cursor = 'none';
 renderer.domElement.style.cursor = 'none';
+
+// Modo invencibilidade
+const statusJogo = {
+    tirosSofridos: 0,
+    invencivel: false // Começa desativado
+};
 
 // INTERAÇÃO COM RAYCASTER
 const raycaster = new THREE.Raycaster();
@@ -149,7 +154,6 @@ function carregarInimigos() {
    loader.load('./assets/dronebranco.glb', function (gltf) {
        let modeloInimigoBase = gltf.scene;
 
-
        modeloInimigoBase.traverse(function (child) {
            if (child.isMesh) {
                child.castShadow = true;
@@ -171,21 +175,18 @@ loader.load('./assets/aviao.gltf', function (gltf) {
 const modeloAviao = gltf.scene;
    modeloAviao.traverse(function (child) {
        if (child.isMesh) {
-           child.castShadow = true;
-           child.receiveShadow = true;
+           child.castShadow = false;
+           child.receiveShadow = false;
        }
    });
-
    // Salva o modelo na variável
    aviao = modeloAviao;
    aviao.scale.set(2, 2, 2);
    aviao.rotation.set(Math.PI / 2, Math.PI, 0);
    aviao.position.set(0, 10, -90);
    scene.add(aviao);
-
    // Só agora que o aviao existe e tem .position, chamamos os inimigos
    carregarInimigos();
-
 }, undefined, function (error) {
    console.error('Erro ao carregar o modelo do avião:', error);
 });
@@ -211,7 +212,6 @@ function renderizar() {
         gerenciarDisparos(deltaTime);
         gerenciarColisoes();
     }
-
     status.update();
     renderer.render(scene, camera);
 }
@@ -274,6 +274,8 @@ function gerenciarColisoes() {
     // Monitora o dando sofrido/causado
     verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento);
     verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimigos, aviao, bbProjetilAux, bbInimigoAux, velocidadeDeslocamento);
+
+    barraDeVida(statusJogo, animacaoAtiva);
 }
 
 function configurarJanela() {
@@ -315,6 +317,10 @@ function configurarJanela() {
             case 'Escape':
                 pausarSimulacao();
                 break;
+            case 'g':
+                statusJogo.invencivel = !statusJogo.invencivel;
+            case 'G':
+                statusJogo.invencivel = !statusJogo.invencivel;
         }
     }, false);
 
@@ -338,4 +344,52 @@ function configurarJanela() {
             onWindowResize(camera, renderer);
         }
     }, false);
+
+    // Botão de Reiniciar
+    const botaoReiniciar = document.getElementById("btn-reiniciar");
+    document.getElementById("btn-reiniciar").addEventListener("click", function(event) {
+        event.preventDefault();
+
+        // Reinicia o contador de tiros 
+        statusJogo.tirosSofridos = 0;
+
+        //Faz o avião reaparecer na tela
+        aviao.visible = true;
+
+        //Retoma a simulação
+        retomarSimulacao();
+
+        // Esconde a janela de Game Over mudando o display de volta para none
+        document.getElementById("tela-game-over").style.display = "none";
+    });
+}
+
+function barraDeVida(){
+    const maxTiros = 20; // Definimos o limite estrito de 20 tiros aqui
+    const tiros = statusJogo.tirosSofridos;
+    
+    // Calcula a porcentagem restante de vida com base nos tiros sofridos
+    const porcentagemVida = Math.max(0, ((maxTiros - tiros) / maxTiros) * 100);
+    
+    // Altera dinamicamente a largura (width) da barra vermelha no estiloJogo.css
+    const elementoBarra = document.getElementById("barra-preenchimento");
+    if (elementoBarra) {
+        elementoBarra.style.width = porcentagemVida + "%";
+    }
+
+    if (tiros >= maxTiros && animacaoAtiva) {
+        dispararGameOver(); 
+    }
+}
+
+function dispararGameOver() {
+    aviao.visible = false;
+    mira.visible = false;
+    mouse.visible = true;
+
+    pausarSimulacao();
+    const tela = document.getElementById("tela-game-over");
+    if (tela) {
+        tela.style.display = "flex";
+    }
 }
