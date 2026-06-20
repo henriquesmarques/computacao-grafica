@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { calcularAlturaTerreno } from "./util.js";
-import {GLTFLoader} from '../build/jsm/loaders/GLTFLoader.js';
 
 // NÉVOA (Fog)
 export function configurarNevoa(scene, renderer, valorNevoa) {
@@ -81,49 +80,47 @@ export function atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidade
     paredeInvisivel.constant = -camera.position.z + 65 + 30;
 }
 
-export function animarAviao(animacaoAtiva, aviao, mira, velocidadeDeslocamento, vetorInterpolacao) {
-   if (!animacaoAtiva) return;
+export function animarAviao(animacaoAtiva, aviao, helice, mira, velocidadeDeslocamento, vetorInterpolacao) {
+    if (!animacaoAtiva) return;
 
-   const pontoDestino = mira.position;
-   vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
+    const pontoDestino = mira.position;
+    vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
 
-   // Move o avião suavemente até a mira
-   aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento);
+    // Move o avião suavemente até a mira
+    aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento);
 
-   // EIXO Y
-   // Calcula a diferença vertical entre a mira e o avião
-   const diferencaY = pontoDestino.y - aviao.position.y;
+    // EIXO Y
+    // Calcula a diferença vertical entre a mira e o avião
+    const diferencaY = pontoDestino.y - aviao.position.y;
 
-   // Cria o desvio de X baseado nessa diferença
-   let desvioX = diferencaY * 0.02;
+    // Cria o desvio de X baseado nessa diferença
+    let desvioX = diferencaY * 0.02;
 
-   // Trava para o bico não inclinar excessivamente
-   if (desvioX > 0.5) desvioX = 0.5;
-   if (desvioX < -0.5) desvioX = -0.5;
+    // Trava para o bico não inclinar excessivamente
+    if (desvioX > 0.3) desvioX = 0.3;
+    if (desvioX < -0.3) desvioX = -0.3;
 
-   const funcaoBaseX = 0;
-   const rotacaoAlvoX = funcaoBaseX + desvioX; //subida e descida
-   aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
+    const rotacaoAlvoX = (-Math.PI / 2) + desvioX;
+    aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
 
-   // EIXO X
-   // Calcula a diferença horizontal entre a mira e o avião
-   const diferencaX = pontoDestino.x - aviao.position.x;
+    // EIXO X
+    // Calcula a diferença horizontal entre a mira e o avião
+    const diferencaX = pontoDestino.x - aviao.position.x;
 
-   // Cria o desvio de Y baseado nessa diferença
-   let desvioY = diferencaX * 0.02;
+    // Cria o desvio de Y baseado nessa diferença
+    let desvioY = diferencaX * 0.02;
 
-   // Trava para o corpo não inclinar excessivamente
-   if (desvioY > 1) desvioY = 1;
-   if (desvioY < -1) desvioY = -1;
+    // Trava para o corpo não inclinar excessivamente
+    if (desvioY > 1) desvioY = 1;
+    if (desvioY < -1) desvioY = -1;
 
-   // Soma a base (Math.PI) com o desvio calculated
-   const bicoRotacaoAlvoY = Math.PI - desvioY;
-   aviao.rotation.y += (bicoRotacaoAlvoY - aviao.rotation.y) * 0.1;
+    // Soma a base (Math.PI) com o desvio calculated
+    const bicoRotacaoAlvoY = Math.PI + desvioY;
+    aviao.rotation.y += (bicoRotacaoAlvoY - aviao.rotation.y) * 0.1;
 
-   const inclinacaoAsaZ = desvioY ;
-   aviao.rotation.z += (inclinacaoAsaZ - aviao.rotation.z) * 0.1;
+    // Animação da hélice
+    helice.rotation.y += Math.PI / 10;
 }
-
 
 export function atualizarTerreno(planoTerreno, geometriaPlano, camera, comprimentoTerreno, segmentosTerreno) {
     // Move o plano inteiro para frente junto com a câmera
@@ -313,8 +310,7 @@ function removerProjetilDaCena(scene, projetil, lista, index) {
     lista.splice(index, 1);
 }
 
-export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento, aviaoAtingido) {
-
+export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento) {
     for (let i = listaProjeteis.length - 1; i >= 0; i--) {
         const projetil = listaProjeteis[i];
         projetil.position.addScaledVector(projetil.userData.direcao, 1.5 + (velocidadeDeslocamento * 0.5));
@@ -322,18 +318,11 @@ export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbP
         bbProjetilAux.setFromObject(projetil);
 
         if (bbProjetilAux.intersectsBox(bbAviao)) {
-            if (statusJogo.invencivel) {
-                removerProjetilDaCena(scene, projetil, listaProjeteis, i);
-                continue; 
-            }
-            if (aviaoAtingido) {
-                aviaoAtingido.currentTime = 0; // Reinicia o audio
-                aviaoAtingido.play();
-            }
             statusJogo.tirosSofridos++; // Atualiza automaticamente no GUI
             removerProjetilDaCena(scene, projetil, listaProjeteis, i);
             continue;
         }
+
         // Limpa projéteis muito distantes
         if (projetil.position.distanceTo(aviao.position) > 300) {
             removerProjetilDaCena(scene, projetil, listaProjeteis, i);
@@ -371,67 +360,6 @@ export function verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimi
         // Limpa projéteis distantes
         if (projetil.position.distanceTo(aviao.position) > 300) {
             removerProjetilDaCena(scene, projetil, listaProjeteisPlayer, i);
-        }
-    }
-}
-
-export function criaHealthPack(scene, limiteXDinamico, listaItens, aviao, statusJogo) {
-    if (statusJogo.invencivel) return;
-
-    // Escolhe uma posição aleatória 
-    const randomX = (Math.random() - 0.5) * (limiteXDinamico * 2);
-    const randomY = 12 + Math.random() * 23;
-    const posicaoZ = aviao.position.z - 120;
-
-    //Importa Health Pack
-    const loader = new GLTFLoader();
-    loader.load('./assets/healthpack.glb', function(gltf){
-        const healthpack = gltf.scene;
-        healthpack.scale.set(0.05, 0.05, 0.05); 
-        healthpack.position.set(randomX, randomY, posicaoZ); 
-
-        healthpack.rotation.y = Math.PI/2;
-
-        healthpack.userData = { foiAtraido: false };
-
-        scene.add(healthpack);
-        listaItens.push(healthpack);
-    });
-}
-
-export function controlarHealthPacks(scene, listaItens, aviao, statusJogo, somCura) {
-    if (statusJogo.invencivel) return;
-    for (let i = listaItens.length - 1; i >= 0; i--) {
-        const item = listaItens[i];
-
-        // Faz o kit ficar girando sozinho no céu enquanto espera o player
-        item.rotation.y += 0.02;
-
-        // Calcula a distância entre o item parado e o avião do jogador
-        const distancia = item.position.distanceTo(aviao.position);
-
-        // Se a distância for menor que 40 ativa o imã
-        if (distancia < 40.0) {
-            item.position.lerp(aviao.position, 0.1); // Puxa o item suavemente
-            const escalaAlvo = new THREE.Vector3(0, 0, 0);
-            item.scale.lerp(escalaAlvo, 0.12);
-        }
-
-        // Se a distância for menor que 3, significa que colidiu/coletou
-        if (distancia < 3.0) {
-            // Recupera vida (diminui os tiros sofridos em 5, sem deixar ficar menor que zero)
-            statusJogo.tirosSofridos = Math.max(0, statusJogo.tirosSofridos - 5);
-
-            // Toca o som de cura com segurança contra bloqueio do navegador
-            if (somCura) {
-                const somAtual = somCura.cloneNode();
-                somAtual.volume = 0.3;
-                somAtual.play().catch(e => console.log("Áudio bloqueado pelo navegador"));
-            }
-
-            // Remove o objeto do jogo
-            scene.remove(item);
-            listaItens.splice(i, 1);
         }
     }
 }

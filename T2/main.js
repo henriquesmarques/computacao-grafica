@@ -24,9 +24,7 @@ import {
     atirarPlayer,
     atirarInimigos,
     verificarDanoNoPlayer,
-    verificarDanoNosInimigos,
-    criaHealthPack,
-    controlarHealthPacks
+    verificarDanoNosInimigos
 } from "./logicaJogo.js";
 
 // VARIÁVEIS GLOBAIS
@@ -54,6 +52,7 @@ const cadenciaTiroInimigos = 1;
 let mousePressionado = false;
 let tempoDecorridoTiroPlayer = 0;
 const cadenciaTiroPlayer = 0.15;
+const statusJogo = {tirosSofridos: 0};
 
 // --- TRABALHO 1 ---
 
@@ -72,7 +71,14 @@ const status = new Stats();
 document.getElementById("webgl-output").appendChild(status.domElement);
 
 // AVIÃO
-let aviao = null;
+const objetoAviao = criarAviao();
+const aviao = objetoAviao.corpo;
+const helice = objetoAviao.helice;
+
+// Deita o avião para ficar paralelo ao chão e de frente pra tela
+aviao.rotation.set(-Math.PI / 2, Math.PI, 0);
+aviao.position.set(0, 10, -90);
+scene.add(aviao);
 
 // --- TRABALHO 2 ---
 
@@ -84,14 +90,6 @@ scene.add(mira);
 // Oculta o cursor inicialmente
 document.body.style.cursor = 'none';
 renderer.domElement.style.cursor = 'none';
-
-// Modo invencibilidade
-const statusJogo = {
-    tirosSofridos: 0,
-    invencivel: false // Começa desativado
-};
-const indicadorTexto = document.getElementById("texto-invencivel");
-
 
 // INTERAÇÃO COM RAYCASTER
 const raycaster = new THREE.Raycaster();
@@ -154,78 +152,38 @@ scene.add(luzAmbiente);
 let modeloInimigoBase = null;
 const escalaOriginalInimigo = 5;
 
-// Adicionando Trilha Sonora ao Jogo
-const trilhaSonora = new Audio('./assets/imperial.mp3');
-trilhaSonora.loop = true;  // Faz a música recomeçar automaticamente
-trilhaSonora.volume = 0.1;
-trilhaSonora.play();
-
-// Som do Tiro Player
-const musicaTiro = new Audio('./assets/tiroaviao.mp3')
-
-// Som de Captura de Health Pack
-const musicaHealthPack = new Audio('./assets/bloco2.mp3')
-
-// Som Avião Atingido
-const aviaoAtingido = new Audio('./assets/acertouAviao.mp3')
-aviaoAtingido.volume = 0.05;
-
-//Healt Pack
-const listaItens = []; // Sua lista de itens existente
-let timerHealthPack = null; // Variável para controlar o tempo do spawn
-
 const loader = new GLTFLoader();
-function carregarInimigos() {
-   loader.load('./assets/dronebranco.glb', function (gltf) {
-       let modeloInimigoBase = gltf.scene;
+loader.load('./assets/dronebranco.glb', function (gltf) {
+    modeloInimigoBase = gltf.scene;
 
-       modeloInimigoBase.traverse(function (child) {
-           if (child.isMesh) {
-               child.castShadow = true;
-               child.receiveShadow = true;
-           }
-       });
-       // Cria os inimigos na cena usando a lista global
-       criarInimigos(scene, modeloInimigoBase, listaInimigos, 2, escalaOriginalInimigo, velocidadeDeslocamento, limiteXDinamico, aviao);
-      
-       // Liga a interface e o loop do jogo agora que tudo carregou
-       construirInterface();
-       renderizar();
-   }, undefined, function (error) {
-       console.error('Erro ao carregar o modelo do drone:', error);
-   });
-}
+    // Ativa as sombras em todas as partes da malha do drone
+    modeloInimigoBase.traverse(function (child) {
+        if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+        }
+    });
 
-loader.load('./assets/aviao.gltf', function (gltf) {
-const modeloAviao = gltf.scene;
-   modeloAviao.traverse(function (child) {
-       if (child.isMesh) {
-           child.castShadow = false;
-           child.receiveShadow = false;
-       }
-   });
-   // Salva o modelo na variável
-   aviao = modeloAviao;
-   aviao.scale.set(2, 2, 2);
-   aviao.rotation.set(Math.PI / 2, Math.PI, 0);
-   aviao.position.set(0, 10, -90);
-   scene.add(aviao);
-   // Só agora que o aviao existe e tem .position, chamamos os inimigos
-   carregarInimigos();
+    // Só cria os inimigos depois do modelo carregar
+    criarInimigos(scene, modeloInimigoBase, listaInimigos, 2, escalaOriginalInimigo, velocidadeDeslocamento, limiteXDinamico, aviao);
 }, undefined, function (error) {
-   console.error('Erro ao carregar o modelo do avião:', error);
+    console.error('Erro ao carregar o modelo do drone:', error);
 });
+
+construirInterface();
+renderizar();
 
 function renderizar() {
     requestAnimationFrame(renderizar);
     const deltaTime = relogio.getDelta();
+
     if (animacaoAtiva) {
         // Atualização de Posições e Controles
         atualizarMira(raycaster, mouse, camera, paredeInvisivel, mira, limiteXDinamico);
         atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidadeDeslocamento);
 
         // Animações e Cenário
-        animarAviao(animacaoAtiva, aviao, mira, velocidadeDeslocamento, vetorInterpolacao);
+        animarAviao(animacaoAtiva, aviao, helice, mira, velocidadeDeslocamento, vetorInterpolacao);
         atualizarTerreno(planoTerreno, geometriaPlano, camera, comprimentoTerreno, segmentosTerreno);
         reposicionarArvores(listaArvores, posicoesValidas, camera, comprimentoTerreno);
         atualizarInimigos(listaInimigos, camera, limiteXDinamico, escalaOriginalInimigo, velocidadeDeslocamento, aviao);
@@ -236,13 +194,8 @@ function renderizar() {
         // Sistema de Combate
         gerenciarDisparos(deltaTime);
         gerenciarColisoes();
-
-        //Health Pack
-        if (Math.random() < 0.001) { 
-            criaHealthPack(scene, limiteXDinamico, listaItens, aviao, statusJogo);
-        }
-        controlarHealthPacks(scene, listaItens, aviao, statusJogo, musicaHealthPack);
     }
+
     status.update();
     renderer.render(scene, camera);
 }
@@ -271,7 +224,6 @@ function pausarSimulacao() {
     document.body.style.cursor = 'default';
     renderer.domElement.style.cursor = 'default';
     mira.visible = false;
-    trilhaSonora.pause(); 
 }
 
 function retomarSimulacao() {
@@ -279,7 +231,6 @@ function retomarSimulacao() {
     document.body.style.cursor = 'none';
     renderer.domElement.style.cursor = 'none';
     mira.visible = true;
-    trilhaSonora.play();
 }
 
 function gerenciarDisparos(deltaTime) {
@@ -305,10 +256,8 @@ function gerenciarColisoes() {
     bbAviao.setFromObject(aviao);
 
     // Monitora o dando sofrido/causado
-    verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento, aviaoAtingido);
+    verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento);
     verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimigos, aviao, bbProjetilAux, bbInimigoAux, velocidadeDeslocamento);
-
-    barraDeVida(statusJogo, animacaoAtiva);
 }
 
 function configurarJanela() {
@@ -327,29 +276,7 @@ function configurarJanela() {
         if (!animacaoAtiva) {
             retomarSimulacao();
         } else {
-            if (event.button === 0){
-                mousePressionado = true; // Botão esquerdo atira
-
-                if(typeof musicaTiro !== "undefined"){
-                    // Disparo continuo
-                    const reproduzirDisparo = () => {
-                        // Interrompe o som quando para de pressionar no mouse
-                        if (!mousePressionado || !animacaoAtiva) return;
-                        
-                        // Repete o audio a uma cadencia de 0.15s quando pressionado
-                        const somAtual = musicaTiro.cloneNode();
-                        somAtual.volume = 0.15; // Volume calibrado para rajadas rápidas
-                        somAtual.play().catch(erro => console.log(erro));
-                        
-                
-                        somAtual.addEventListener('ended', () => somAtual.remove());
-                        
-                        // Mapeia o proximo tiro para 15s
-                        setTimeout(reproduzirDisparo, 150);
-                    };
-                    reproduzirDisparo();
-                }
-            } 
+            if (event.button === 0) mousePressionado = true; // Botão esquerdo atira
         }
     }, false);
 
@@ -371,40 +298,6 @@ function configurarJanela() {
                 break;
             case 'Escape':
                 pausarSimulacao();
-                break;
-            case 'g':
-                statusJogo.invencivel = !statusJogo.invencivel;
-                if (indicadorTexto) {
-                    if (statusJogo.invencivel) {
-                        indicadorTexto.style.display = "block"; // Mostra o texto no canto direito
-                    } else {
-                        indicadorTexto.style.display = "none";  // Esconde o texto ao voltar ao normal
-                    }
-                }
-                break;
-            case 'G':
-                statusJogo.invencivel = !statusJogo.invencivel;
-                if (indicadorTexto) {
-                    if (statusJogo.invencivel) {
-                        indicadorTexto.style.display = "block"; // Mostra o texto no canto direito
-                    } else {
-                        indicadorTexto.style.display = "none";  // Esconde o texto ao voltar ao normal
-                    }
-                }
-                break;
-            case 'S':
-                if(trilhaSonora.paused){
-                    trilhaSonora.play();
-                }else{
-                    trilhaSonora.pause();
-                }
-                break;
-            case 's':
-                if(trilhaSonora.paused){
-                    trilhaSonora.play();
-                }else{
-                    trilhaSonora.pause();
-                }
                 break;
         }
     }, false);
@@ -429,52 +322,4 @@ function configurarJanela() {
             onWindowResize(camera, renderer);
         }
     }, false);
-
-    // Botão de Reiniciar
-    const botaoReiniciar = document.getElementById("btn-reiniciar");
-    document.getElementById("btn-reiniciar").addEventListener("click", function(event) {
-        event.preventDefault();
-
-        // Reinicia o contador de tiros 
-        statusJogo.tirosSofridos = 0;
-
-        //Faz o avião reaparecer na tela
-        aviao.visible = true;
-
-        //Retoma a simulação
-        retomarSimulacao();
-
-        // Esconde a janela de Game Over mudando o display de volta para none
-        document.getElementById("tela-game-over").style.display = "none";
-    });
-}
-
-function barraDeVida(){
-    const maxTiros = 20; // Definimos o limite estrito de 20 tiros aqui
-    const tiros = statusJogo.tirosSofridos;
-    
-    // Calcula a porcentagem restante de vida com base nos tiros sofridos
-    const porcentagemVida = Math.max(0, ((maxTiros - tiros) / maxTiros) * 100);
-    
-    // Altera dinamicamente a largura (width) da barra vermelha no estiloJogo.css
-    const elementoBarra = document.getElementById("barra-preenchimento");
-    if (elementoBarra) {
-        elementoBarra.style.width = porcentagemVida + "%";
-    }
-
-    if (tiros >= maxTiros && animacaoAtiva) {
-        dispararGameOver(); 
-    }
-}
-
-function dispararGameOver() {
-    aviao.visible = false;
-    mira.visible = false;
-    mouse.visible = true;
-
-    pausarSimulacao();
-    const tela = document.getElementById("tela-game-over");
-    if (tela) {
-        tela.style.display = "flex";
-    }
 }
