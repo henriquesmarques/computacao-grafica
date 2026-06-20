@@ -339,7 +339,7 @@ export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbP
     }
 }
 
-export function verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimigos, aviao, bbProjetilAux, bbInimigoAux, velocidadeDeslocamento, morteInimigo) {
+export function verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimigos, aviao, bbProjetilAux, bbInimigoAux, velocidadeDeslocamento, inimigoMorrendo) {
     for (let i = listaProjeteisPlayer.length - 1; i >= 0; i--) {
         const projetil = listaProjeteisPlayer[i];
 
@@ -359,6 +359,10 @@ export function verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimi
             if (bbProjetilAux.intersectsBox(bbInimigoAux)) {
                 atingiuInimigo = true;
                 inimigo.userData.morrendo = true; // Inicia animação de queda do drone
+                if (inimigoMorrendo) {
+                    inimigoMorrendo.currentTime = 0; // Reinicia o audio
+                    inimigoMorrendo.play();
+                }
 
                 removerProjetilDaCena(scene, projetil, listaProjeteisPlayer, i);
                 break;

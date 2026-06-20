@@ -172,6 +172,10 @@ const musicaHealthPack = new Audio('./assets/bloco2.mp3')
 const aviaoAtingido = new Audio('./assets/acertouAviao.mp3')
 aviaoAtingido.volume = 0.05;
 
+// Som Inimigo Morrendo
+const inimigoMorrendo = new Audio('./assets/inimigomorrendo.mp3')
+inimigoMorrendo.volume = 0.1;
+
 // Healt Pack
 let healthpack = null;
 const listaItens = []; 
@@ -313,7 +317,7 @@ function gerenciarColisoes() {
 
     // Monitora o dando sofrido/causado
     verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento, aviaoAtingido);
-    verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimigos, aviao, bbProjetilAux, bbInimigoAux, velocidadeDeslocamento);
+    verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimigos, aviao, bbProjetilAux, bbInimigoAux, velocidadeDeslocamento, inimigoMorrendo);
 
     barraDeVida(statusJogo, animacaoAtiva);
 }
