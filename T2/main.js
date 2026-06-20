@@ -24,7 +24,9 @@ import {
     atirarPlayer,
     atirarInimigos,
     verificarDanoNoPlayer,
-    verificarDanoNosInimigos
+    verificarDanoNosInimigos,
+    criaHealthPack,
+    controlarHealthPacks
 } from "./logicaJogo.js";
 
 // VARIÁVEIS GLOBAIS
@@ -152,6 +154,26 @@ scene.add(luzAmbiente);
 let modeloInimigoBase = null;
 const escalaOriginalInimigo = 5;
 
+// Adicionando Trilha Sonora ao Jogo
+const trilhaSonora = new Audio('./assets/imperial.mp3');
+trilhaSonora.loop = true;  // Faz a música recomeçar automaticamente
+trilhaSonora.volume = 0.1;
+trilhaSonora.play();
+
+// Som do Tiro Player
+const musicaTiro = new Audio('./assets/tiroaviao.mp3')
+
+// Som de Captura de Health Pack
+const musicaHealthPack = new Audio('./assets/bloco2.mp3')
+
+// Som Avião Atingido
+const aviaoAtingido = new Audio('./assets/acertouAviao.mp3')
+aviaoAtingido.volume = 0.05;
+
+//Healt Pack
+const listaItens = []; // Sua lista de itens existente
+let timerHealthPack = null; // Variável para controlar o tempo do spawn
+
 const loader = new GLTFLoader();
 function carregarInimigos() {
    loader.load('./assets/dronebranco.glb', function (gltf) {
@@ -214,6 +236,12 @@ function renderizar() {
         // Sistema de Combate
         gerenciarDisparos(deltaTime);
         gerenciarColisoes();
+
+        //Health Pack
+        if (Math.random() < 0.001) { 
+            criaHealthPack(scene, limiteXDinamico, listaItens, aviao, statusJogo);
+        }
+        controlarHealthPacks(scene, listaItens, aviao, statusJogo, musicaHealthPack);
     }
     status.update();
     renderer.render(scene, camera);
@@ -243,6 +271,7 @@ function pausarSimulacao() {
     document.body.style.cursor = 'default';
     renderer.domElement.style.cursor = 'default';
     mira.visible = false;
+    trilhaSonora.pause(); 
 }
 
 function retomarSimulacao() {
@@ -250,6 +279,7 @@ function retomarSimulacao() {
     document.body.style.cursor = 'none';
     renderer.domElement.style.cursor = 'none';
     mira.visible = true;
+    trilhaSonora.play();
 }
 
 function gerenciarDisparos(deltaTime) {
@@ -275,7 +305,7 @@ function gerenciarColisoes() {
     bbAviao.setFromObject(aviao);
 
     // Monitora o dando sofrido/causado
-    verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento);
+    verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento, aviaoAtingido);
     verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimigos, aviao, bbProjetilAux, bbInimigoAux, velocidadeDeslocamento);
 
     barraDeVida(statusJogo, animacaoAtiva);
@@ -297,7 +327,29 @@ function configurarJanela() {
         if (!animacaoAtiva) {
             retomarSimulacao();
         } else {
-            if (event.button === 0) mousePressionado = true; // Botão esquerdo atira
+            if (event.button === 0){
+                mousePressionado = true; // Botão esquerdo atira
+
+                if(typeof musicaTiro !== "undefined"){
+                    // Disparo continuo
+                    const reproduzirDisparo = () => {
+                        // Interrompe o som quando para de pressionar no mouse
+                        if (!mousePressionado || !animacaoAtiva) return;
+                        
+                        // Repete o audio a uma cadencia de 0.15s quando pressionado
+                        const somAtual = musicaTiro.cloneNode();
+                        somAtual.volume = 0.15; // Volume calibrado para rajadas rápidas
+                        somAtual.play().catch(erro => console.log(erro));
+                        
+                
+                        somAtual.addEventListener('ended', () => somAtual.remove());
+                        
+                        // Mapeia o proximo tiro para 15s
+                        setTimeout(reproduzirDisparo, 150);
+                    };
+                    reproduzirDisparo();
+                }
+            } 
         }
     }, false);
 
@@ -338,6 +390,20 @@ function configurarJanela() {
                     } else {
                         indicadorTexto.style.display = "none";  // Esconde o texto ao voltar ao normal
                     }
+                }
+                break;
+            case 'S':
+                if(trilhaSonora.paused){
+                    trilhaSonora.play();
+                }else{
+                    trilhaSonora.pause();
+                }
+                break;
+            case 's':
+                if(trilhaSonora.paused){
+                    trilhaSonora.play();
+                }else{
+                    trilhaSonora.pause();
                 }
                 break;
         }

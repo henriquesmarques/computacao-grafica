@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { calcularAlturaTerreno } from "./util.js";
+import {GLTFLoader} from '../build/jsm/loaders/GLTFLoader.js';
 
 // NÉVOA (Fog)
 export function configurarNevoa(scene, renderer, valorNevoa) {
@@ -312,7 +313,7 @@ function removerProjetilDaCena(scene, projetil, lista, index) {
     lista.splice(index, 1);
 }
 
-export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento) {
+export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbProjetilAux, statusJogo, velocidadeDeslocamento, aviaoAtingido) {
 
     for (let i = listaProjeteis.length - 1; i >= 0; i--) {
         const projetil = listaProjeteis[i];
@@ -324,6 +325,10 @@ export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbP
             if (statusJogo.invencivel) {
                 removerProjetilDaCena(scene, projetil, listaProjeteis, i);
                 continue; 
+            }
+            if (aviaoAtingido) {
+                aviaoAtingido.currentTime = 0; // Reinicia o audio
+                aviaoAtingido.play();
             }
             statusJogo.tirosSofridos++; // Atualiza automaticamente no GUI
             removerProjetilDaCena(scene, projetil, listaProjeteis, i);
@@ -370,3 +375,63 @@ export function verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimi
     }
 }
 
+export function criaHealthPack(scene, limiteXDinamico, listaItens, aviao, statusJogo) {
+    if (statusJogo.invencivel) return;
+
+    // Escolhe uma posição aleatória 
+    const randomX = (Math.random() - 0.5) * (limiteXDinamico * 2);
+    const randomY = 12 + Math.random() * 23;
+    const posicaoZ = aviao.position.z - 120;
+
+    //Importa Health Pack
+    const loader = new GLTFLoader();
+    loader.load('./assets/healthpack.glb', function(gltf){
+        const healthpack = gltf.scene;
+        healthpack.scale.set(0.05, 0.05, 0.05); 
+        healthpack.position.set(randomX, randomY, posicaoZ); 
+
+        healthpack.rotation.y = Math.PI/2;
+
+        healthpack.userData = { foiAtraido: false };
+
+        scene.add(healthpack);
+        listaItens.push(healthpack);
+    });
+}
+
+export function controlarHealthPacks(scene, listaItens, aviao, statusJogo, somCura) {
+    if (statusJogo.invencivel) return;
+    for (let i = listaItens.length - 1; i >= 0; i--) {
+        const item = listaItens[i];
+
+        // Faz o kit ficar girando sozinho no céu enquanto espera o player
+        item.rotation.y += 0.02;
+
+        // Calcula a distância entre o item parado e o avião do jogador
+        const distancia = item.position.distanceTo(aviao.position);
+
+        // Se a distância for menor que 40 ativa o imã
+        if (distancia < 40.0) {
+            item.position.lerp(aviao.position, 0.1); // Puxa o item suavemente
+            const escalaAlvo = new THREE.Vector3(0, 0, 0);
+            item.scale.lerp(escalaAlvo, 0.12);
+        }
+
+        // Se a distância for menor que 3, significa que colidiu/coletou
+        if (distancia < 3.0) {
+            // Recupera vida (diminui os tiros sofridos em 5, sem deixar ficar menor que zero)
+            statusJogo.tirosSofridos = Math.max(0, statusJogo.tirosSofridos - 5);
+
+            // Toca o som de cura com segurança contra bloqueio do navegador
+            if (somCura) {
+                const somAtual = somCura.cloneNode();
+                somAtual.volume = 0.3;
+                somAtual.play().catch(e => console.log("Áudio bloqueado pelo navegador"));
+            }
+
+            // Remove o objeto do jogo
+            scene.remove(item);
+            listaItens.splice(i, 1);
+        }
+    }
+}
