@@ -8,7 +8,10 @@ import {
     criarArvores,
     iniciarCamera,
     calcularAlturaTerreno,
-    criarMira
+    criarMira,
+    criarTexturaProcedural,
+    shaderAguaVertex,
+    shaderAguaFragment
 } from "./util.js";
 import {
     configurarNevoa,
@@ -24,7 +27,8 @@ import {
     atirarPlayer,
     atirarInimigos,
     verificarDanoNoPlayer,
-    verificarDanoNosInimigos
+    verificarDanoNosInimigos,
+    atualizarAgua
 } from "./logicaJogo.js";
 
 // VARIÁVEIS GLOBAIS
@@ -104,13 +108,6 @@ const comprimentoTerreno = 300;
 const larguraTerreno = 450;
 const segmentosTerreno = 128;
 const geometriaPlano = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerreno, segmentosTerreno, segmentosTerreno);
-const materialPlano = new THREE.MeshLambertMaterial({color: "darkgreen"});
-const planoTerreno = new THREE.Mesh(geometriaPlano, materialPlano);
-
-// Deita o plano do terreno
-planoTerreno.rotation.x = -Math.PI / 2;
-planoTerreno.receiveShadow = true;
-scene.add(planoTerreno);
 
 // ÁRVORES
 const quantidadeArvores = 150;
@@ -170,6 +167,96 @@ loader.load('./assets/dronebranco.glb', function (gltf) {
     console.error('Erro ao carregar o modelo do drone:', error);
 });
 
+// --- TRABALHO 3 ---
+
+// Texturas geradas via Canvas (Ruído ajustado para 0 para ser uma cor suave e remover o efeito pontilhado)
+const texturaAreia = criarTexturaProcedural("#e4c63e", 0);
+const texturaGrama = criarTexturaProcedural("#2c4617", 0);
+const texturaRocha = criarTexturaProcedural("#2d2c2c", 0);
+const texturaNeve  = criarTexturaProcedural("#ffffff", 0);
+
+const materialPlano = new THREE.MeshLambertMaterial({color: "white"});
+
+// O onBeforeCompile injeta as funções GLSL e mantém a iluminação e sombra do Lambert nativo!
+materialPlano.onBeforeCompile = function (shader) {
+    shader.uniforms.tAreia = { value: texturaAreia };
+    shader.uniforms.tGrama = { value: texturaGrama };
+    shader.uniforms.tRocha = { value: texturaRocha };
+    shader.uniforms.tNeve = { value: texturaNeve };
+
+    shader.vertexShader = `
+        varying float vAlturaMundo;
+        varying vec2 vMyUv;
+        ${shader.vertexShader}
+    `.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        // Lemos a altura exata que foi computada no plano localmente (Eixo Z antes da rotação)
+        vAlturaMundo = position.z; 
+        
+        // Repetição da textura (mesmo suave, garantimos um mapeamento de UV simples)
+        vMyUv = uv * 4.0; `
+    );
+
+    shader.fragmentShader = `
+        uniform sampler2D tAreia;
+        uniform sampler2D tGrama;
+        uniform sampler2D tRocha;
+        uniform sampler2D tNeve;
+        varying float vAlturaMundo;
+        varying vec2 vMyUv;
+        ${shader.fragmentShader}
+    `.replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        vec4 cAreia = texture2D(tAreia, vMyUv);
+        vec4 cGrama = texture2D(tGrama, vMyUv);
+        vec4 cRocha = texture2D(tRocha, vMyUv);
+        vec4 cNeve  = texture2D(tNeve, vMyUv);
+
+        float altura = vAlturaMundo;
+
+        // Limites de blending EXATOS mapeados para o terreno (De -25 até +10)
+        // Valores <= -15.0 são pura Areia
+        float blendGrama = smoothstep(-15.0, -10.0, altura); // De -15 para -10 a Areia vira Grama
+        float blendRocha = smoothstep(-2.0, 3.0, altura);    // De -2 para 3 a Grama vira Rocha (Pés das montanhas)
+        float blendNeve  = smoothstep(6.0, 8.0, altura);     // De 6 para 8 a Rocha vira Neve (Somente nos Picos mais altos)
+
+        vec4 mixCor = mix(cAreia, cGrama, blendGrama);
+        mixCor = mix(mixCor, cRocha, blendRocha);
+        mixCor = mix(mixCor, cNeve, blendNeve);
+
+        diffuseColor = mixCor; // Substitui a cor original pelas texturas procedurais baseadas em altura
+        `
+    );
+};
+
+const planoTerreno = new THREE.Mesh(geometriaPlano, materialPlano);
+planoTerreno.rotation.x = -Math.PI / 2;
+planoTerreno.receiveShadow = true;
+scene.add(planoTerreno);
+
+// --- Plano de Água com Shaders ---
+const aguaUniforms = {
+    tempo: { value: 0.0 },
+    corAgua: { value: new THREE.Color("#1ca3ec") },
+    corNevoa: { value: new THREE.Color("rgb(175, 200, 220)") },
+    distanciaNevoa: { value: valorNevoa }
+};
+
+const geometriaAgua = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerreno, 64, 64);
+const materialAgua = new THREE.ShaderMaterial({
+    uniforms: aguaUniforms,
+    vertexShader: shaderAguaVertex,
+    fragmentShader: shaderAguaFragment,
+    transparent: true
+});
+
+const malhaAgua = new THREE.Mesh(geometriaAgua, materialAgua);
+malhaAgua.rotation.x = -Math.PI / 2;
+malhaAgua.position.y = -15.5; // Fica exatamente no limite final da areia
+scene.add(malhaAgua);
+
 construirInterface();
 renderizar();
 
@@ -178,6 +265,10 @@ function renderizar() {
     const deltaTime = relogio.getDelta();
 
     if (animacaoAtiva) {
+        // --- T3: Atualiza uniformes de Shader e Água ---
+        aguaUniforms.tempo.value += deltaTime;
+        aguaUniforms.distanciaNevoa.value = valorNevoa;
+
         // Atualização de Posições e Controles
         atualizarMira(raycaster, mouse, camera, paredeInvisivel, mira, limiteXDinamico);
         atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidadeDeslocamento);
@@ -185,6 +276,7 @@ function renderizar() {
         // Animações e Cenário
         animarAviao(animacaoAtiva, aviao, helice, mira, velocidadeDeslocamento, vetorInterpolacao);
         atualizarTerreno(planoTerreno, geometriaPlano, camera, comprimentoTerreno, segmentosTerreno);
+        atualizarAgua(malhaAgua, camera, comprimentoTerreno);
         reposicionarArvores(listaArvores, posicoesValidas, camera, comprimentoTerreno);
         atualizarInimigos(listaInimigos, camera, limiteXDinamico, escalaOriginalInimigo, velocidadeDeslocamento, aviao);
 

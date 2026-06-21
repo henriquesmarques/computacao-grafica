@@ -206,8 +206,7 @@ export function iniciarCamera(position) {
  */
 export function calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ) {
     const ruido = gerarRuidoFractal(coordenadaMundoX, coordenadaMundoZ);
-    // Mapeamento: Extrapola de [0, 1] para amplitudes topográficas visíveis (de -25 a +10 unidades de altura)
-    return -25 + ruido * 35;
+    return -40 + ruido * 70;
 }
 
 /**
@@ -293,3 +292,83 @@ function gerarHash(x, y) {
 function interpolacaoLinear(inicio, fim, fator) {
     return inicio + fator * (fim - inicio);
 }
+
+// --- T3: Geração Procedural de Texturas ---
+/**
+ * Cria uma textura baseada em ruído diretamente pelo Canvas.
+ * Soluciona a necessidade de "Procedural Texturing" sem necessitar de imagens externas.
+ */
+export function criarTexturaProcedural(corHex, intensidadeRuido = 30) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    // Pinta o fundo com a cor base especificada
+    ctx.fillStyle = corHex;
+    ctx.fillRect(0, 0, 256, 256);
+
+    // Manipula os pixels para gerar o ruído processual
+    const imgData = ctx.getImageData(0, 0, 256, 256);
+    const data = imgData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+        const ruido = (Math.random() - 0.5) * intensidadeRuido;
+        data[i] = Math.max(0, Math.min(255, data[i] + ruido));     // R
+        data[i+1] = Math.max(0, Math.min(255, data[i+1] + ruido)); // G
+        data[i+2] = Math.max(0, Math.min(255, data[i+2] + ruido)); // B
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    const textura = new THREE.CanvasTexture(canvas);
+    textura.wrapS = THREE.RepeatWrapping;
+    textura.wrapT = THREE.RepeatWrapping;
+    return textura;
+}
+
+// --- T3: Shaders da Água ---
+export const shaderAguaVertex = `
+uniform float tempo;
+varying vec2 vUv;
+varying vec3 vWorldPosition;
+
+void main() {
+    vUv = uv * 10.0;
+    vec3 pos = position;
+    
+    // Criação das ondas (deslocamento no eixo Z local, que é o Y no mundo pois o plano rotaciona -90º em X)
+    // pos.z += sin(pos.x * 0.2 + tempo * 2.0) * 0.8;
+    // pos.z += cos(pos.y * 0.2 + tempo * 1.5) * 0.8;
+
+    vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
+    vWorldPosition = worldPosition.xyz;
+    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+}
+`;
+
+export const shaderAguaFragment = `
+uniform float tempo;
+uniform vec3 corAgua;
+uniform vec3 corNevoa;
+uniform float distanciaNevoa;
+
+varying vec2 vUv;
+varying vec3 vWorldPosition;
+
+void main() {
+    // Texturização procedural da água usando seno/cosseno para imitar refração e espuma leve
+    float onda1 = sin(vUv.x * 5.0 + tempo) * 0.5 + 0.5;
+    float onda2 = cos(vUv.y * 5.0 - tempo * 0.8) * 0.5 + 0.5;
+    float reflexo = onda1 * onda2;
+
+    // Mistura a cor base da água com um "brilho" simulando espuma
+    vec3 corFinal = mix(corAgua, vec3(0.9, 0.95, 1.0), reflexo * 0.3);
+
+    gl_FragColor = vec4(corFinal, 0.75); // 75% de opacidade
+
+    // Aplicação da Névoa (Fog) com base na distância global da câmera
+    float dist = length(cameraPosition - vWorldPosition);
+    float fatorNevoa = clamp((dist - 10.0) / (distanciaNevoa - 10.0), 0.0, 1.0);
+    gl_FragColor.rgb = mix(gl_FragColor.rgb, corNevoa, fatorNevoa);
+}
+`;

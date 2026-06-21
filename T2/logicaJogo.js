@@ -363,3 +363,10 @@ export function verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimi
         }
     }
 }
+
+// --- T3: Movimentação do plano da água acoplado ao terreno ---
+export function atualizarAgua(malhaAgua, camera, comprimentoTerreno) {
+    // Move o plano de água para frente junto com a câmera acompanhando o terreno
+    const deslocamentoZ = camera.position.z - (comprimentoTerreno / 2) + 60;
+    malhaAgua.position.z = deslocamentoZ;
+}
