@@ -136,6 +136,9 @@ listaArvores.forEach((arvore, indice) => {
     arvore.position.z = camera.position.z - (pontoFixo.y + (comprimentoTerreno / 2));
     arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
 
+    // Oculta árvores cuja altura ficou no fundo do mar (abaixo de -14.5 para dar margem de praia)
+    arvore.visible = arvore.position.y > -14.5;
+
     scene.add(arvore);
 });
 

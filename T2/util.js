@@ -218,7 +218,7 @@ export function calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ) {
  * @param {number} [oitavas=4] - Quantidade de camadas de detalhe (quanto maior, mais detalhado e custoso)
  * @returns {number} O ruído acumulado e normalizado (0 a 1).
  */
-function gerarRuidoFractal(x, y, oitavas = 4) {
+function gerarRuidoFractal(x, y, oitavas = 3) {
     let valorAcumulado = 0;
     let amplitudeTotal = 1;
     let frequenciaTotal = 0.015; // Define a escala macro das montanhas
@@ -335,10 +335,6 @@ varying vec3 vWorldPosition;
 void main() {
     vUv = uv * 10.0;
     vec3 pos = position;
-    
-    // Criação das ondas (deslocamento no eixo Z local, que é o Y no mundo pois o plano rotaciona -90º em X)
-    // pos.z += sin(pos.x * 0.2 + tempo * 2.0) * 0.8;
-    // pos.z += cos(pos.y * 0.2 + tempo * 1.5) * 0.8;
 
     vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
     vWorldPosition = worldPosition.xyz;
@@ -364,7 +360,7 @@ void main() {
     // Mistura a cor base da água com um "brilho" simulando espuma
     vec3 corFinal = mix(corAgua, vec3(0.9, 0.95, 1.0), reflexo * 0.3);
 
-    gl_FragColor = vec4(corFinal, 0.75); // 75% de opacidade
+    gl_FragColor = vec4(corFinal, 0.75); // Revertido para 75% de opacidade constante
 
     // Aplicação da Névoa (Fog) com base na distância global da câmera
     float dist = length(cameraPosition - vWorldPosition);

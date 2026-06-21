@@ -192,6 +192,9 @@ export function reposicionarArvores(listaArvores, posicoesValidas, camera, compr
 
             // Recalcula a altura com base no relevo da nova posição
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+
+            // Oculta a árvore caso a nova posição gerada seja debaixo d'água ou muito perto da margem
+            arvore.visible = arvore.position.y > -14.5;
         }
     }
 }
