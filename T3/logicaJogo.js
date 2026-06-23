@@ -69,7 +69,8 @@ export function atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidade
 
     // Câmera acompanha o eixo X do avião lateralmente
     camera.position.x = aviao.position.x;
-    camera.lookAt(aviao.position.x, aviao.position.y, aviao.position.z - 30);
+    //mantem a camera na posição fixa
+    camera.lookAt(aviao.position.x, 20, aviao.position.z - 30);
 
     // Limitação da câmera para não afundar no terreno
     if (camera.position.y < 20) camera.position.y = 20;
@@ -434,4 +435,11 @@ export function controlarHealthPacks(scene, listaItens, aviao, statusJogo, somCu
             listaItens.splice(i, 1);
         }
     }
+}
+
+// --- T3: Movimentação do plano da água acoplado ao terreno ---
+export function atualizarAgua(malhaAgua, camera, comprimentoTerreno) {
+    // Move o plano de água para frente junto com a câmera acompanhando o terreno
+    const deslocamentoZ = camera.position.z - (comprimentoTerreno / 2) + 60;
+    malhaAgua.position.z = deslocamentoZ;
 }
