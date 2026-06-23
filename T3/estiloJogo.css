@@ -339,3 +339,51 @@
     from { box-shadow: 0 0 5px rgba(120, 255, 140, 0.1); }
     to { box-shadow: 0 0 15px rgba(120, 255, 140, 0.4); }
 }
+
+/* VERSÃO MOBILE */
+#controles-mobile-topo {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    display: none; /* Escondido no desktop */
+    gap: 10px;
+    z-index: 999;
+}
+.btn-ctrl-mobl {
+    background: rgba(30, 60, 30, 0.6);
+    border: 1px solid rgba(120, 255, 140, 0.4);
+    color: #85ff8d;
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    transition: 0.2s;
+}
+#joystick-zone {
+    position: fixed;
+    bottom: 40px;
+    left: 40px;
+    width: 120px;
+    height: 120px;
+    display: none; /* Escondido no desktop */
+    z-index: 999;
+    pointer-events: auto;
+}
+@media (max-width: 768px) {
+    #controles-mobile-topo {
+        display: flex; /* Exibe os botões no celular */
+    }
+    #joystick-zone {
+        display: block; /* Exibe o joystick no celular */
+    }
+    
+    /* Reajusta o tamanho das telas de carregamento/gameover para caber no celular */
+    .modal-conteudo {
+        width: 90% !important;
+        padding: 20px !important;
+    }
+    .titulo-game-over {
+        font-size: 32px !important;
+    }
+}

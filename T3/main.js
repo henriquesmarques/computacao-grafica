@@ -590,6 +590,72 @@ function configurarJanela() {
             document.getElementById("tela-carregamento").style.display = "none";
         });
     }
+    // VERSÃO MOBILE 
+    // Botão Fullscreen
+    const btnFullscreen = document.getElementById('btn-fullscreen');
+    if (btnFullscreen) {
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Erro ao ativar Fullscreen: ${err.message}`);
+                });
+                btnFullscreen.innerText = "📺 JANELA";
+            } else {
+                document.exitFullscreen();
+                btnFullscreen.innerText = "📺 FULLSCREEN";
+            }
+        });
+    }
+
+    // Botão de Trilha Sonora
+    const btnMusica = document.getElementById('btn-musica');
+    if (btnMusica) {
+        btnMusica.addEventListener('click', () => {
+            if (typeof trilhaSonora !== 'undefined') { 
+                if (trilhaSonora.paused) {
+                    trilhaSonora.play();
+                    btnMusica.innerText = "🎵 MÚSICA: ON";
+                    btnMusica.style.background = "rgba(30, 60, 30, 0.6)";
+                } else {
+                    trilhaSonora.pause();
+                    btnMusica.innerText = "🔇 MÚSICA: OFF";
+                    btnMusica.style.background = "rgba(80, 20, 20, 0.6)"; // Fica vermelho se pausar
+                }
+            }
+        });
+    }
+
+    // Inicialização do Joystick Virtual 
+    const joystickZone = document.getElementById('joystick-zone');
+    if (joystickZone) {
+        const manager = nipplejs.create({
+            zone: joystickZone,
+            mode: 'static',
+            position: { left: '60px', bottom: '60px' },
+            color: '#85ff8d',
+            size: 100
+        });
+
+        // Movimentação da Mira pelo Joystick + Tiro Automático
+        manager.on('move', function (evt, data) {
+            if (!data.vector) return;
+
+            // Sensibilidade do analógico para mover a mira
+            const sensibilidade = 0.5; 
+            
+            // Modifica a posição da mira baseado no vetor do joystick (X e Y)
+            mira.position.x += data.vector.x * sensibilidade;
+            mira.position.y += data.vector.y * sensibilidade;
+
+            // Trava de segurança para a mira não fugir da tela no mobile
+            mira.position.x = Math.max(-20, Math.min(20, mira.position.x));
+            mira.position.y = Math.max(4, Math.min(25, mira.position.y));
+
+            if (typeof atirar === 'function') {
+                atirarPlayer();
+            }
+        });
+    }
 }
 
 function barraDeVida(){
