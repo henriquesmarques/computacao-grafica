@@ -535,11 +535,14 @@ function configurarJanela() {
         // Reinicia o contador de tiros 
         statusJogo.tirosSofridos = 0;
 
-        //Faz o avião reaparecer na tela
+        // Faz o avião reaparecer na tela
         aviao.visible = true;
 
-        //Retoma a simulação
+        // Retoma a simulação
         retomarSimulacao();
+
+        // Reinicia tempo
+        relogio.start();
 
         // Esconde a janela de Game Over mudando o display de volta para none
         document.getElementById("tela-game-over").style.display = "none";
@@ -574,4 +577,38 @@ function dispararGameOver() {
     if (tela) {
         tela.style.display = "flex";
     }
+
+    // 💡 1. PEGA O TEMPO EM SEGUNDOS E FORMATA
+    const segundosTotais = Math.floor(relogio.getElapsedTime());
+    const tempoFormatado = formatarTempo(segundosTotais);
+
+    // 💡 2. INJETA OS VALORES NO SEU HTML ATUAL
+    const hudTiros = document.getElementById("hud-valor-tiros");
+    if (hudTiros) {
+        hudTiros.innerText = statusJogo.tirosSofridos;
+    }
+
+    const hudTempo = document.getElementById("hud-valor-tempo");
+    if (hudTempo) {
+        hudTempo.innerText = tempoFormatado;
+    }
+
+    tela = document.getElementById("tela-game-over");
+    if (tela) {
+        tela.style.display = "flex";
+    }
+}
+
+// Função auxiliar para formatar os segundos em formato de relógio militar
+function formatarTempo(segundosTotais) {
+    const horas = Math.floor(segundosTotais / 3600);
+    const minutos = Math.floor((segundosTotais % 3600) / 60);
+    const segundos = segundosTotais % 60;
+
+    // Garante que números menores que 10 ganhem um "0" na frente (ex: 05 em vez de 5)
+    const h = horas.toString().padStart(2, '0');
+    const m = minutos.toString().padStart(2, '0');
+    const s = segundos.toString().padStart(2, '0');
+
+    return `${h}:${m}:${s}`;
 }
