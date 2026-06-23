@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tela inicial</title>
+
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../html/resources/default.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../html/resources/default.css">
+    <link rel="stylesheet" href="estiloJogo.css">
+</head>
+
+<body>
+<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+<script type="importmap">
+    {"imports": {"three": "../build/three.module.js"}}
+</script>
+
+<div id="webgl-output">
+    <script type="module" src="main.js"></script>
+</div>
+<div id="container-vida">
+    <span id="icone-coracao">❤️</span>
+    <div id="barra-fundo">
+        <div id="barra-preenchimento"></div>
+    </div>
+</div>
+
+<div id="texto-invencivel" style="display: none;">MODO INVENCIBILIDADE</div>
+
+<div id="tela-game-over">
+    <div class="modal-conteudo">
+        <h1 class="titulo-game-over">GAME OVER</h1>
+        <p class="subtitulo-game-over">AVIÃO ABATIDO</p>
+        <div class="stats-gameover">
+            <div class="linha-stat">
+                <span>TIROS SOFRIDOS</span>
+                <span id="hud-valor-tiros">20</span>
+            </div>
+            <div class="linha-stat">
+                <span>TEMPO DE VOO</span>
+                <span id="hud-valor-tempo">00:00:32</span>
+            </div>
+        </div>
+        <button id="btn-reiniciar">REINICIAR MISSÃO</button>
+
+    </div>
+</div>
+</body>
+</html>
