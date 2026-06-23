@@ -324,6 +324,7 @@ function renderizar() {
         // Animações e Cenário
         animarAviao(animacaoAtiva, aviao, mira, velocidadeDeslocamento, vetorInterpolacao);
         atualizarTerreno(planoTerreno, geometriaPlano, camera, comprimentoTerreno, segmentosTerreno);
+        atualizarAgua(malhaAgua, camera, comprimentoTerreno);
         reposicionarArvores(listaArvores, posicoesValidas, camera, comprimentoTerreno);
         atualizarInimigos(listaInimigos, camera, limiteXDinamico, escalaOriginalInimigo, velocidadeDeslocamento, aviao);
 
@@ -360,7 +361,7 @@ function construirInterface() {
         })
         .name("Alterar Névoa");
 
-    gui.add(statusJogo, 'tirosSofridos').name("Tiros Sofridos").listen();
+    //gui.add(statusJogo, 'tirosSofridos').name("Tiros Sofridos").listen();
 }
 
 function pausarSimulacao() {
@@ -539,7 +540,7 @@ function configurarJanela() {
         aviao.visible = true;
 
         // Retoma a simulação
-        retomarSimulacao();
+        reiniciarSimulacao();
 
         // Reinicia tempo
         relogio.start();
@@ -611,4 +612,59 @@ function formatarTempo(segundosTotais) {
     const s = segundos.toString().padStart(2, '0');
 
     return `${h}:${m}:${s}`;
+}
+
+function reiniciarSimulacao() {
+    // Reinicia os dados de controle e o relógio
+    statusJogo.tirosSofridos = 0;
+    relogio.start(); 
+
+    // Teleporta o avião e a mira de volta para a largada
+    if (aviao) {
+        aviao.position.set(0, 10, -90);
+        aviao.rotation.set(Math.PI / 2, Math.PI, 0); // Zera inclinações de bico e asa
+        aviao.visible = true;
+    }
+    
+    if (mira) {
+        mira.position.set(0, 10, -65);
+    }
+
+    // Teleporta a câmera de volta para a posição inicial
+    camera.position.set(0, 25, -30);
+    camera.lookAt(0, 25, -60);
+
+    // Limpa os lasers dos inimigos que ficaram voando
+    for (let i = listaProjeteis.length - 1; i >= 0; i--) {
+        scene.remove(listaProjeteis[i]);
+    }
+    listaProjeteis.length = 0; 
+
+    // Limpa os lasers do player que ficaram voando
+    for (let i = listaProjeteisPlayer.length - 1; i >= 0; i--) {
+        scene.remove(listaProjeteisPlayer[i]);
+    }
+    listaProjeteisPlayer.length = 0; 
+
+    // Remove os Health Packs antigos do mapa
+    for (let i = listaItens.length - 1; i >= 0; i--) {
+        scene.remove(listaItens[i]);
+    }
+    listaItens.length = 0;
+
+    // Lista de Arvores
+    listaArvores.forEach((arvore, indice) => {
+        // Pega o ponto estático correspondente ao índice da árvore
+        const indiceFixo = indice % posicoesValidas.length;
+        const pontoFixo = posicoesValidas[indiceFixo];
+
+        // Posiciona exatamente igual à primeira vez que o jogo carregou
+        arvore.position.x = pontoFixo.x;
+        arvore.position.z = camera.position.z - (pontoFixo.y + (comprimentoTerreno / 2));
+        arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+    });
+
+    // Despausa o motor do jogo e esconde o menu
+    retomarSimulacao();
+    document.getElementById("tela-game-over").style.display = "none";
 }
