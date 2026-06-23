@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Tela inicial</title>
+    <title>Sistema de Combate Aereo</title>
 
-    <link rel="shortcut icon" href="../favicon.ico">
-    <link rel="stylesheet" href="../html/resources/default.css">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="stylesheet" href="html/resources/default.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="shortcut icon" href="../favicon.ico">
-    <link rel="stylesheet" href="../html/resources/default.css">
-    <link rel="stylesheet" href="estiloJogo.css">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="stylesheet" href="html/resources/default.css">
+    <link rel="stylesheet" href="T3/estiloJogo.css">
 </head>
 
 <body>
@@ -19,7 +19,7 @@
 </script>
 
 <div id="webgl-output">
-    <script type="module" src="main.js"></script>
+    <script type="module" src="T3/main.js"></script>
 </div>
 <div id="container-vida">
     <span id="icone-coracao">❤️</span>
@@ -46,6 +46,21 @@
         </div>
         <button id="btn-reiniciar">REINICIAR MISSÃO</button>
 
+    </div>
+</div>
+
+<div id="tela-carregamento">
+    <div class="modal-conteudo loading-hud">
+        <div class="hud-topo">
+        </div>
+
+        <h1 class="subtitulo-carregando">CARREGANDO...</h1>
+        <p class="titulo-inicial">SISTEMA DE COMBATE AEREO</p>
+
+        <div class="barra-fundo-loading">
+            <div id="barra-progresso-loading"></div>
+        </div>
+        <button id="btn-start" disabled>INICIAR MISSÃO</button>
     </div>
 </div>
 </body>

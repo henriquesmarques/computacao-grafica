@@ -55,7 +55,7 @@ export function atualizarMira(raycaster, mouse, camera, paredeInvisivel, mira, l
     raycaster.ray.intersectPlane(paredeInvisivel, mira.position);
 
     // Limitação espacial da mira na tela
-    if (mira.position.y < 10) mira.position.y = 10;
+    if (mira.position.y < 4) mira.position.y = 4;
     if (mira.position.y > 40) mira.position.y = 40;
     if (mira.position.x > limiteXDinamico) mira.position.x = limiteXDinamico;
     if (mira.position.x < -limiteXDinamico) mira.position.x = -limiteXDinamico;

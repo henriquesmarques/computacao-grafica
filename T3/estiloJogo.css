@@ -22,7 +22,6 @@
     border-radius: 15px;
     overflow: hidden; 
 }
-
 #barra-preenchimento {
     width: 100%; /* Mantém a largura controlada pelo JS */
     height: 100%;
@@ -119,13 +118,32 @@
         0 0 10px rgba(100, 255, 120, .7),
         0 0 30px rgba(100, 255, 120, .4);
 }
-
 /* AVIÃO ABATIDO */
 .subtitulo-game-over{
     margin-top:20px;
     margin-bottom:25px;
     color:white;
-    font-size:28px;
+    font-size:26px;
+    letter-spacing:3px;
+}
+
+/* SISTEMA DE COMBATE AEREO*/
+.titulo-inicial {
+    margin: 15px 0 0 0; 
+    font-size: 23px;    
+    font-family: Impact, sans-serif;
+    letter-spacing: 4px;
+    color: #85ff8d;
+    text-shadow:
+        0 0 10px rgba(100, 255, 120, .7),
+        0 0 30px rgba(100, 255, 120, .4);
+}
+/* CARREGANDO */
+.subtitulo-carregando{
+    margin-top:20px;
+    margin-bottom:25px;
+    color:white;
+    font-size:15px;
     letter-spacing:3px;
 }
 
@@ -199,4 +217,125 @@
     scale(1.04);
     box-shadow:
     0 0 20px rgba(120,255,140,.4);
+}
+
+/* TELA DE CARREGAMENTO */
+#tela-carregamento {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    
+    background: rgba(10, 15, 20, 0.5); 
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    
+    z-index: 10000; 
+    opacity: 1;
+    transition: opacity 0.5s ease; 
+}
+
+.loading-hud {
+    position: relative;
+    width: 450px;         
+    min-height: 350px;    
+    padding: 50px;        
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+
+    /* Vidro escuro */
+    background: linear-gradient(
+        145deg,
+        rgba(25, 35, 45, 0.85),
+        rgba(10, 15, 20, 0.92)
+    );
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(150, 255, 170, 0.3);
+    box-shadow: 
+        inset 0 0 40px rgba(100, 255, 120, 0.05),
+        0 15px 35px rgba(0, 0, 0, 0.6);
+
+    /* Cantos cortados perfeitos */
+    clip-path: polygon(
+        25px 0, 
+        calc(100% - 25px) 0, 
+        100% 25px, 
+        100% calc(100% - 25px), 
+        calc(100% - 25px) 100%, 
+        25px 100%, 
+        0 calc(100% - 25px), 
+        0 25px
+    );
+}
+.loading-hud .titulo-game-over {
+    margin: 40px 0 0 0; /* Margem idêntica do Game Over */
+}
+.loading-hud .subtitulo-game-over {
+    margin-top: 20px;
+    margin-bottom: 35px; 
+}
+.barra-fundo-loading {
+    width: 100%;          
+    box-sizing: border-box;
+    height: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(120, 255, 140, 0.3);
+    margin-top: 10px;
+    margin-bottom: 40px;  
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#barra-progresso-loading {
+    width: 0%; 
+    height: 100%;
+    background: linear-gradient(90deg, rgba(30,60,30,.8), #85ff8d);
+    box-shadow: 0 0 12px rgba(133, 255, 141, 0.8); 
+    transition: width 0.1s ease-out;
+}
+
+/* Botão START */
+#btn-start {
+    border: none;
+    padding: 18px 45px;
+    font-size: 25px;
+    
+    /* Apagadinho enquanto desativado*/
+    color: rgba(133, 255, 141, 0.3); 
+    background: rgba(20, 40, 25, 0.2);
+    border: 1px solid rgba(120, 255, 140, 0.15);
+    
+    font-weight: bold;
+    transition: .3s;
+    cursor: default;
+    clip-path: polygon(15px 0, 100% 0, calc(100% - 15px) 100%, 0 100%);
+    pointer-events: none; /* Bloqueia cliques no começo */
+}
+#btn-start.liberado {
+    color: #85ff8d;
+    background: linear-gradient(
+        90deg,
+        rgba(30, 60, 30, .7),
+        rgba(60, 150, 70, .5)
+    );
+    border: 1px solid rgba(120, 255, 140, .4);
+    
+    cursor: pointer;
+    pointer-events: auto; /* Libera clique */
+    animation: piscarBotaoVerde 1.5s infinite alternate;
+}
+#btn-start.liberado:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 20px rgba(120, 255, 140, .4);
+    color: #ffffff;
+}
+@keyframes piscarBotaoVerde {
+    from { box-shadow: 0 0 5px rgba(120, 255, 140, 0.1); }
+    to { box-shadow: 0 0 15px rgba(120, 255, 140, 0.4); }
 }

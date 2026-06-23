@@ -33,6 +33,31 @@ import {
     atualizarAgua
 } from "./logicaJogo.js";
 
+// GERENCIADOR DE CARREGAMENTO 
+const loadingManager = new THREE.LoadingManager();
+
+loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+    if (!itemsTotal) return;
+    const porcentagem = Math.floor((itemsLoaded / itemsTotal) * 100);
+    
+    const barraProgresso = document.getElementById('barra-progresso-loading');
+    const textoPorcentagem = document.getElementById('texto-porcentagem');
+    
+    if (barraProgresso) barraProgresso.style.width = porcentagem + '%';
+    if (textoPorcentagem) textoPorcentagem.innerText = porcentagem + '%';
+};
+
+loadingManager.onLoad = function () {
+    pausarSimulacao();
+    const textoPorcentagem = document.getElementById('texto-porcentagem');
+    const btnStart = document.getElementById('btn-start');
+    
+    if (btnStart) {
+        btnStart.disabled = false;
+        btnStart.classList.add('liberado'); // Ativa o visual azul brilhante do CSS
+    }
+};
+
 // VARIÁVEIS GLOBAIS
 const scene = new THREE.Scene();
 const renderer = initRenderer();
@@ -154,32 +179,33 @@ const escalaOriginalInimigo = 5;
 // --- TRABALHO 3 ---
 
 // Adicionando Trilha Sonora ao Jogo
-const trilhaSonora = new Audio('./assets/imperial.mp3');
+const trilhaSonora = new Audio('T3/assets/imperial.mp3');
 trilhaSonora.loop = true;  // Faz a música recomeçar automaticamente
 trilhaSonora.volume = 0.1;
 trilhaSonora.play();
 
 // Som do Tiro Player
-const musicaTiro = new Audio('./assets/tiroaviao.mp3')
+const musicaTiro = new Audio('T3/assets/tiroaviao.mp3')
 
 // Som de Captura de Health Pack
-const musicaHealthPack = new Audio('./assets/bloco2.mp3')
+const musicaHealthPack = new Audio('T3/assets/bloco2.mp3')
 
 // Som Avião Atingido
-const aviaoAtingido = new Audio('./assets/acertouAviao.mp3')
+const aviaoAtingido = new Audio('T3/assets/acertouAviao.mp3')
 aviaoAtingido.volume = 0.05;
 
 // Som Inimigo Morrendo
-const inimigoMorrendo = new Audio('./assets/inimigomorrendo.mp3')
+const inimigoMorrendo = new Audio('T3/assets/inimigomorrendo.mp3')
 inimigoMorrendo.volume = 0.1;
 
 // Healt Pack
 let healthpack = null;
 const listaItens = []; 
 
-const loader = new GLTFLoader();
+// Importações 
+const loader = new GLTFLoader(loadingManager);
 function carregarInimigos() {
-   loader.load('./assets/dronebranco.glb', function (gltf) {
+   loader.load('T3/assets/dronebranco.glb', function (gltf) {
        let modeloInimigoBase = gltf.scene;
 
        modeloInimigoBase.traverse(function (child) {
@@ -199,7 +225,7 @@ function carregarInimigos() {
    });
 }
 
-loader.load('./assets/aviao.gltf', function (gltf) {
+loader.load('T3/assets/aviao.gltf', function (gltf) {
 const modeloAviao = gltf.scene;
    modeloAviao.traverse(function (child) {
        if (child.isMesh) {
@@ -219,7 +245,7 @@ const modeloAviao = gltf.scene;
    console.error('Erro ao carregar o modelo do avião:', error);
 });
 
-loader.load('./assets/healthpack.glb', function(gltf){
+loader.load('T3/assets/healthpack.glb', function(gltf){
     let vida = gltf.scene;
     healthpack = vida;
 });
@@ -548,6 +574,22 @@ function configurarJanela() {
         // Esconde a janela de Game Over mudando o display de volta para none
         document.getElementById("tela-game-over").style.display = "none";
     });
+
+    const botaoIniciar = document.getElementById("btn-start");
+    if (botaoIniciar) {
+        botaoIniciar.addEventListener("click", function(event) {
+            event.preventDefault();
+
+            // Reinicia o cronômetro para o tempo de voo começar do zero
+            relogio.start();
+
+            // Retoma a simulação (faz o jogo rodar)
+            retomarSimulacao();
+
+            // Esconde a janela de Carregamento mudando o display para none
+            document.getElementById("tela-carregamento").style.display = "none";
+        });
+    }
 }
 
 function barraDeVida(){
