@@ -630,14 +630,11 @@ function configurarJanela() {
         const manager = nipplejs.create({
             zone: joystickZone,
             mode: 'static',
-            position: {
-                left: '60px',
-                bottom: '60px'
-            },
+            position: {left: '60px',bottom: '60px'},
             color: '#85ff8d',
             size: 100
-
         });
+
         manager.on('move', function(evt, data){
             if (!data.vector) return;
             const velocidade = 0.8;
@@ -646,7 +643,7 @@ function configurarJanela() {
             mira.position.y += data.vector.y * velocidade;
             // limites
             mira.position.x = Math.max(-limiteXDinamico,Math.min(limiteXDinamico,mira.position.x));
-            mira.position.y = Math.max(4,Math.min(25,mira.position.y));
+            mira.position.y = Math.max(4,Math.min(25, mira.position.y));
             // força o avião a enxergar a nova posição
             mira.updateMatrixWorld();
             mira.position.z = aviao.position.z - 30;
@@ -654,10 +651,10 @@ function configurarJanela() {
             mousePressionado = true;
         });
         manager.on('end', function(){
-            mousePressionado = false;
+        mousePressionado = false;
         });
     }
-}
+} 
 
 function barraDeVida(){
     const maxTiros = 20; // Definimos o limite estrito de 20 tiros aqui
