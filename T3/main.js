@@ -344,11 +344,7 @@ function renderizar() {
     const deltaTime = relogio.getDelta();
     if (animacaoAtiva) {
         // Atualização de Posições e Controles
-        if (!('ontouchstart' in window)) {
-            atualizarMira(raycaster,mouse,
-                camera,paredeInvisivel,mira,limiteXDinamico);
-        }
-        
+        atualizarMira(raycaster, mouse, camera, paredeInvisivel, mira, limiteXDinamico);
         atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidadeDeslocamento);
 
         // Animações e Cenário
@@ -627,10 +623,12 @@ function configurarJanela() {
             }
         });
     }
-    // Inicialização do Joystick Virtual
+    // Inicialização do Joystick Virtual 
     const joystickZone = document.getElementById('joystick-zone');
     if (joystickZone) {
+
         const manager = nipplejs.create({
+
             zone: joystickZone,
             mode: 'static',
             position: {
@@ -639,26 +637,60 @@ function configurarJanela() {
             },
             color: '#85ff8d',
             size: 100
+
         });
+
+
         manager.on('move', function(evt, data){
+
             if (!data.vector) return;
+
             const velocidade = 0.8;
+
             // move a mira REAL
-            mira.position.x +=data.vector.x * velocidade;
-            mira.position.y +=data.vector.y * velocidade;
+            mira.position.x +=
+                data.vector.x * velocidade;
+
+            mira.position.y +=
+                data.vector.y * velocidade;
+
+
             // limites
-            mira.position.x = Math.max(-limiteXDinamico,Math.min(limiteXDinamico,mira.position.x));
-            mira.position.y = Math.max(4,Math.min(25,mira.position.y));
+            mira.position.x = Math.max(
+                -limiteXDinamico,
+                Math.min(
+                    limiteXDinamico,
+                    mira.position.x
+                )
+            );
+
+            mira.position.y = Math.max(
+                4,
+                Math.min(
+                    25,
+                    mira.position.y
+                )
+            );
+
+
             // força o avião a enxergar a nova posição
             mira.updateMatrixWorld();
+
+
             // tiro contínuo
             mousePressionado = true;
+
         });
+
+
         manager.on('end', function(){
+
             mousePressionado = false;
+
         });
+
     }
-} 
+}
 
 function barraDeVida(){
     const maxTiros = 20; // Definimos o limite estrito de 20 tiros aqui
