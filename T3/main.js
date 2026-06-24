@@ -635,39 +635,51 @@ function configurarJanela() {
         });
     }
     // Inicialização do Joystick Virtual
-    const joystickZone =
-    document.getElementById('joystick-zone');
-
-    if(joystickZone){
+    const joystickZone = document.getElementById('joystick-zone');
+    if (joystickZone) {
         const manager = nipplejs.create({
-            zone:joystickZone,
-            mode:'static',
-            position:{
-                left:'60px',
-                bottom:'60px'
+            zone: joystickZone,
+            mode: 'static',
+            position: {
+                left: '60px',
+                bottom: '60px'
             },
-            color:'#85ff8d',
-            size:100
+            color: '#85ff8d',
+            size: 100
+
         });
-        manager.on('move',function(evt,data){
-            if(!data.vector) return;
+        manager.on('move', function(evt, data){
+            if (!data.vector) return;
             const velocidade = 0.8;
+            // move a mira REAL
             mira.position.x +=
-            data.vector.x * velocidade;
+                data.vector.x * velocidade;
             mira.position.y +=
-            data.vector.y * velocidade;
+                data.vector.y * velocidade;
+
+            // limites
             mira.position.x = Math.max(
                 -limiteXDinamico,
-                Math.min(limiteXDinamico,mira.position.x)
+                Math.min(
+                    limiteXDinamico,
+                    mira.position.x
+                )
             );
-            mira.position.y = Math.max(4,Math.min(40,mira.position.y));
-            // ativa tiro contínuo
+            mira.position.y = Math.max(
+                4,
+                Math.min(
+                    25,
+                    mira.position.y
+                )
+            );
+            // força o avião a enxergar a nova posição
+            mira.updateMatrixWorld();
+            // tiro contínuo
             mousePressionado = true;
         });
-        manager.on('end',function(){
+        manager.on('end', function(){
             mousePressionado = false;
         });
-
     }
 }
 
