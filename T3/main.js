@@ -640,42 +640,34 @@ function configurarJanela() {
         const manager = nipplejs.create({
             zone: joystickZone,
             mode: 'static',
-            position: {
-                left: '60px',
-                bottom: '60px'
-            },
+            position: {left: '60px',bottom: '60px'},
             color: '#85ff8d',
             size: 100
 
         });
         manager.on('move', function(evt, data){
             if (!data.vector) return;
-            const velocidade = 0.8;
-            // move a mira REAL
-            mira.position.x += data.vector.x * velocidade;
-            mira.position.y += data.vector.y * velocidade;
-            // limites
-            mira.position.x = Math.max(-limiteXDinamico,Math.min(limiteXDinamico,mira.position.x));
-            mira.position.y = Math.max(4,Math.min(25, mira.position.y));
-            // força o avião a enxergar a nova posição
-            mira.updateMatrixWorld();
-            mira.position.z = aviao.position.z - 30;
+            const velocidade = 0.5; // Ajuste a velocidade de deslocamento se achar necessário
+            
+            // 💡 O SEGREDO: Movemos o AVIÃO e a MIRA juntos no eixo X e Y!
+            // Como ambos andam juntos, a mira nunca fica torta em relação ao bico do caça
+            aviao.position.x += data.vector.x * velocidade;
+            aviao.position.y += data.vector.y * velocidade;
+            
+            // Aplicamos os limites diretamente no avião para ele não sair da tela
+            aviao.position.x = Math.max(-limiteXDinamico, Math.min(limiteXDinamico, aviao.position.x));
+            aviao.position.y = Math.max(4, Math.min(25, aviao.position.y));
 
-            // ========================================================
-            // 💡 O TRUQUE DA MIRA FANTASMA (Tiro reto sem travar o avião)
-            // ========================================================
-            // Guardamos a posição lateral real que o joystick criou
-            const xRealDaMira = mira.position.x;
-            const yRealDaMira = mira.position.y;
-
-            // Forçamos a mira a ficar RETINHA na frente do avião por um milissegundo...
+            // Colocamos a mira exatamente na mesma coordenada X e Y do avião (Tiro Reto!)
             mira.position.x = aviao.position.x;
             mira.position.y = aviao.position.y;
+            
+            // Mantém a mira à frente no eixo Z
+            mira.position.z = aviao.position.z - 30;
+            mira.updateMatrixWorld();
+
             // tiro contínuo
             mousePressionado = true;
-
-            mira.position.x = xRealDaMira;
-            mira.position.y = yRealDaMira;
         });
         manager.on('end', function(){
             mousePressionado = false;
