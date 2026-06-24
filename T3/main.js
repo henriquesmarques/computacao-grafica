@@ -661,6 +661,9 @@ function configurarJanela() {
             mira.updateMatrixWorld();
             mira.position.z = aviao.position.z - 30;
             // tiro contínuo
+
+            mira.position.x = aviao.position.x;
+            mira.position.y = aviao.position.y;
             mousePressionado = true;
         });
         manager.on('end', function(){
