@@ -635,17 +635,15 @@ function configurarJanela() {
         });
 
         // Movimentação da Mira pelo Joystick + Tiro Automático
+        // Movimentação da Mira pelo Joystick + Tiro Automático
         manager.on('move', function (evt, data) {
             if (!data.vector) return;
 
-            // Sensibilidade do analógico para mover a mira
             const sensibilidade = 0.5; 
             
-            // Modifica a posição da mira baseado no vetor do joystick (X e Y)
             mira.position.x += data.vector.x * sensibilidade;
             mira.position.y += data.vector.y * sensibilidade;
 
-            // Trava de segurança para a mira não fugir da tela no mobile
             mira.position.x = Math.max(-20, Math.min(20, mira.position.x));
             mira.position.y = Math.max(4, Math.min(25, mira.position.y));
 
