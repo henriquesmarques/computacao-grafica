@@ -660,11 +660,22 @@ function configurarJanela() {
             // força o avião a enxergar a nova posição
             mira.updateMatrixWorld();
             mira.position.z = aviao.position.z - 30;
-            // tiro contínuo
 
+            // ========================================================
+            // 💡 O TRUQUE DA MIRA FANTASMA (Tiro reto sem travar o avião)
+            // ========================================================
+            // Guardamos a posição lateral real que o joystick criou
+            const xRealDaMira = mira.position.x;
+            const yRealDaMira = mira.position.y;
+
+            // Forçamos a mira a ficar RETINHA na frente do avião por um milissegundo...
             mira.position.x = aviao.position.x;
             mira.position.y = aviao.position.y;
+            // tiro contínuo
             mousePressionado = true;
+
+            mira.position.x = xRealDaMira;
+            mira.position.y = yRealDaMira;
         });
         manager.on('end', function(){
             mousePressionado = false;
