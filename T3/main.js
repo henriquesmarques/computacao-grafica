@@ -344,8 +344,11 @@ function renderizar() {
     const deltaTime = relogio.getDelta();
     if (animacaoAtiva) {
         // Atualização de Posições e Controles
-
-        atualizarMira(raycaster,mouse,camera,paredeInvisivel,mira,limiteXDinamico);
+        if (!('ontouchstart' in window)) {
+            atualizarMira(raycaster,mouse,
+                camera,paredeInvisivel,mira,limiteXDinamico);
+        }
+        
         atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidadeDeslocamento);
 
         // Animações e Cenário
