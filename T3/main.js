@@ -656,9 +656,10 @@ function configurarJanela() {
             mira.position.y += data.vector.y * velocidade;
             // limites
             mira.position.x = Math.max(-limiteXDinamico,Math.min(limiteXDinamico,mira.position.x));
-            mira.position.y = Math.max(4,Math.min(25, mira.position.y));
+            mira.position.y = Math.max(4,Math.min(25,mira.position.y));
             // força o avião a enxergar a nova posição
             mira.updateMatrixWorld();
+            mira.position.z = aviao.position.z - 30;
             // tiro contínuo
             mousePressionado = true;
         });
