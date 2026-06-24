@@ -606,7 +606,6 @@ function configurarJanela() {
             }
         });
     }
-
     // Botão de Trilha Sonora
     const btnMusica = document.getElementById('btn-musica');
     if (btnMusica) {
@@ -624,7 +623,6 @@ function configurarJanela() {
             }
         });
     }
-
     // Inicialização do Joystick Virtual 
     const joystickZone = document.getElementById('joystick-zone');
     if (joystickZone) {
@@ -651,7 +649,7 @@ function configurarJanela() {
             mira.position.x = Math.max(-20, Math.min(20, mira.position.x));
             mira.position.y = Math.max(4, Math.min(25, mira.position.y));
 
-            if (typeof atirar === 'function') {
+            if (typeof atirarPlayer === 'function') {
                 atirarPlayer();
             }
         });
