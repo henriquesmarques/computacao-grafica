@@ -635,7 +635,7 @@ function configurarJanela() {
         });
         manager.on('move', function(evt, data){
 
-            if (!data.vector) return;
+            if (!data.vector || !mira) return;
             const velocidade = 0.8;
             // move a mira REAL
             mira.position.x +=data.vector.x * velocidade;
