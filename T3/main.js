@@ -640,35 +640,20 @@ function configurarJanela() {
             size:100
         });
         manager.on('move',function(evt,data){
-        if(!data.vector) return;
-        const velocidade = 0.8;
-        // Movimento normal da mira
-        mira.position.x +=
-        data.vector.x * velocidade;
-        mira.position.y +=
-        data.vector.y * velocidade;
-        // Limites
-        mira.position.x = Math.max(
-            -limiteXDinamico,
-            Math.min(
-                limiteXDinamico,
-                mira.position.x
-            )
-        );
-        mira.position.y = Math.max(
-            4,
-            Math.min(
-                40,
-                mira.position.y
-            )
-        );
-        /* FORÇA O TIRO A IR RETO */
-        mira.position.z =
-        aviao.position.z - 50;
-        // atualiza matriz
-        mira.updateMatrixWorld();
-        mousePressionado = true;
-    });
+            if(!data.vector) return;
+            const velocidade = 0.8;
+            mira.position.x +=
+            data.vector.x * velocidade;
+            mira.position.y +=
+            data.vector.y * velocidade;
+            mira.position.x = Math.max(
+                -limiteXDinamico,
+                Math.min(limiteXDinamico,mira.position.x)
+            );
+            mira.position.y = Math.max(4,Math.min(40,mira.position.y));
+            // ativa tiro contínuo
+            mousePressionado = true;
+        });
         manager.on('end',function(){
             mousePressionado = false;
         });
