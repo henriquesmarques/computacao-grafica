@@ -635,21 +635,34 @@ function configurarJanela() {
         });
 
         // Movimentação da Mira pelo Joystick + Tiro Automático
-        // Movimentação da Mira pelo Joystick + Tiro Automático
-        manager.on('move', function (evt, data) {
-            if (!data.vector) return;
+        // Controle mobile do avião usando joystick
+        manager.on('move', function(evt, data){
 
-            const sensibilidade = 0.5; 
-            
+            if (!data.vector || !animacaoAtiva) return;
+            const sensibilidade = 1.2;
+            // move a mira
             mira.position.x += data.vector.x * sensibilidade;
+
+            // invertido porque dedo sobe = avião sobe
             mira.position.y += data.vector.y * sensibilidade;
 
-            mira.position.x = Math.max(-20, Math.min(20, mira.position.x));
-            mira.position.y = Math.max(4, Math.min(25, mira.position.y));
+            // usa o mesmo limite do jogo desktop
+            mira.position.x = Math.max(
+                -limiteXDinamico,
+                Math.min(limiteXDinamico,mira.position.x)
+            );
+            mira.position.y = Math.max(
+                4,
+                Math.min(40,mira.position.y)
+            );
+            // ativa tiro contínuo
+            mousePressionado = true;
 
-            if (typeof atirarPlayer === 'function') {
-                atirarPlayer();
-            }
+        });
+
+        // para de atirar quando soltar
+        manager.on('end', function(){
+            mousePressionado = false;
         });
     }
 }
