@@ -4,14 +4,15 @@ import { calcularAlturaTerreno } from "./util.js";
 // NÉVOA (Fog)
 export function configurarNevoa(scene, renderer, valorNevoa) {
     const corBase = "rgb(175, 200, 220)";
-    scene.fog = new THREE.Fog(corBase, 1, valorNevoa);
+    // A névoa agora começa a 80 unidades da câmera, preservando as cores do primeiro plano
+    scene.fog = new THREE.Fog(corBase, 80, valorNevoa);
     renderer.setClearColor(corBase);
 }
 
 export function gerenciarIluminacao(scene, camera, luzDirecional) {
     // Cria as luzes apenas na primeira execução
     if (!luzDirecional) {
-        luzDirecional = new THREE.DirectionalLight(0xffffff, 2.5);
+        luzDirecional = new THREE.DirectionalLight(0xffffff, 2.0); // Luz ligeiramente reduzida para melhor contraste
         luzDirecional.castShadow = true;
 
         // Otimização de resolução
@@ -43,7 +44,7 @@ export function gerenciarIluminacao(scene, camera, luzDirecional) {
         scene.add(luzDirecional.target);
     }
 
-    luzDirecional.position.set(camera.position.x + 40, 60, camera.position.z - 30);
+    luzDirecional.position.set(camera.position.x + 40, 80, camera.position.z - 30);
     luzDirecional.target.position.set(camera.position.x, 0, camera.position.z - 30);
 
     return luzDirecional;
@@ -54,9 +55,9 @@ export function atualizarMira(raycaster, mouse, camera, paredeInvisivel, mira, l
     raycaster.setFromCamera(mouse, camera);
     raycaster.ray.intersectPlane(paredeInvisivel, mira.position);
 
-    // Limitação espacial da mira na tela
-    if (mira.position.y < 4) mira.position.y = 4;
-    if (mira.position.y > 40) mira.position.y = 40;
+    // Limitação espacial da mira na tela (ELEVADO PARA Y 25 - 45)
+    if (mira.position.y < 25) mira.position.y = 25;
+    if (mira.position.y > 45) mira.position.y = 45;
     if (mira.position.x > limiteXDinamico) mira.position.x = limiteXDinamico;
     if (mira.position.x < -limiteXDinamico) mira.position.x = -limiteXDinamico;
 }
@@ -69,11 +70,11 @@ export function atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidade
 
     // Câmera acompanha o eixo X do avião lateralmente
     camera.position.x = aviao.position.x;
-    //mantem a camera na posição fixa
-    camera.lookAt(aviao.position.x, 20, aviao.position.z - 30);
+    // Câmera alta apontando suavemente para a altura do avião (Y: 25)
+    camera.lookAt(aviao.position.x, 25, aviao.position.z - 30);
 
-    // Limitação da câmera para não afundar no terreno
-    if (camera.position.y < 20) camera.position.y = 20;
+    // Limitação da câmera para mantê-la alta (Y: 55)
+    if (camera.position.y < 55) camera.position.y = 55;
     if (camera.position.x > 5) camera.position.x = 5;
     if (camera.position.x < -5) camera.position.x = -5;
 
@@ -82,46 +83,46 @@ export function atualizarCamera(aviao, mira, camera, paredeInvisivel, velocidade
 }
 
 export function animarAviao(animacaoAtiva, aviao, mira, velocidadeDeslocamento, vetorInterpolacao) {
-   if (!animacaoAtiva) return;
+    if (!animacaoAtiva) return;
 
-   const pontoDestino = mira.position;
-   vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
+    const pontoDestino = mira.position;
+    vetorInterpolacao.set(pontoDestino.x, pontoDestino.y, aviao.position.z);
 
-   // Move o avião suavemente até a mira
-   aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento);
+    // Move o avião suavemente até a mira
+    aviao.position.lerp(vetorInterpolacao, 0.02 * velocidadeDeslocamento);
 
-   // EIXO Y
-   // Calcula a diferença vertical entre a mira e o avião
-   const diferencaY = pontoDestino.y - aviao.position.y;
+    // EIXO Y
+    // Calcula a diferença vertical entre a mira e o avião
+    const diferencaY = pontoDestino.y - aviao.position.y;
 
-   // Cria o desvio de X baseado nessa diferença
-   let desvioX = diferencaY * 0.02;
+    // Cria o desvio de X baseado nessa diferença
+    let desvioX = diferencaY * 0.02;
 
-   // Trava para o bico não inclinar excessivamente
-   if (desvioX > 0.5) desvioX = 0.5;
-   if (desvioX < -0.5) desvioX = -0.5;
+    // Trava para o bico não inclinar excessivamente
+    if (desvioX > 0.5) desvioX = 0.5;
+    if (desvioX < -0.5) desvioX = -0.5;
 
-   const funcaoBaseX = 0;
-   const rotacaoAlvoX = funcaoBaseX + desvioX; //subida e descida
-   aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
+    const funcaoBaseX = 0;
+    const rotacaoAlvoX = funcaoBaseX + desvioX; //subida e descida
+    aviao.rotation.x += (rotacaoAlvoX - aviao.rotation.x) * 0.1;
 
-   // EIXO X
-   // Calcula a diferença horizontal entre a mira e o avião
-   const diferencaX = pontoDestino.x - aviao.position.x;
+    // EIXO X
+    // Calcula a diferença horizontal entre a mira e o avião
+    const diferencaX = pontoDestino.x - aviao.position.x;
 
-   // Cria o desvio de Y baseado nessa diferença
-   let desvioY = diferencaX * 0.02;
+    // Cria o desvio de Y baseado nessa diferença
+    let desvioY = diferencaX * 0.02;
 
-   // Trava para o corpo não inclinar excessivamente
-   if (desvioY > 1) desvioY = 1;
-   if (desvioY < -1) desvioY = -1;
+    // Trava para o corpo não inclinar excessivamente
+    if (desvioY > 1) desvioY = 1;
+    if (desvioY < -1) desvioY = -1;
 
-   // Soma a base (Math.PI) com o desvio calculated
-   const bicoRotacaoAlvoY = Math.PI - desvioY;
-   aviao.rotation.y += (bicoRotacaoAlvoY - aviao.rotation.y) * 0.1;
+    // Soma a base (Math.PI) com o desvio calculated
+    const bicoRotacaoAlvoY = Math.PI - desvioY;
+    aviao.rotation.y += (bicoRotacaoAlvoY - aviao.rotation.y) * 0.1;
 
-   const inclinacaoAsaZ = desvioY ;
-   aviao.rotation.z += (inclinacaoAsaZ - aviao.rotation.z) * 0.1;
+    const inclinacaoAsaZ = desvioY ;
+    aviao.rotation.z += (inclinacaoAsaZ - aviao.rotation.z) * 0.1;
 }
 
 export function atualizarTerreno(planoTerreno, geometriaPlano, camera, comprimentoTerreno, segmentosTerreno) {
@@ -194,11 +195,17 @@ export function reposicionarArvores(listaArvores, posicoesValidas, camera, compr
 
             // Recalcula a altura com base no relevo da nova posição
             arvore.position.y = calcularAlturaTerreno(arvore.position.x, arvore.position.z);
+
+            // Verifica se a árvore está na água (nível da água = -15.5)
+            if (arvore.position.y <= -14.0) {
+                arvore.visible = false;
+            } else {
+                arvore.visible = true;
+            }
         }
     }
 }
 
-// INIMIGOS
 function reposicionarInimigo(inimigo, escalaOriginalInimigo, velocidadeDeslocamento, limiteXDinamico, aviao) {
     // Retorna para a escala inicial a cada respawn
     inimigo.scale.set(escalaOriginalInimigo, escalaOriginalInimigo, escalaOriginalInimigo);
@@ -215,8 +222,8 @@ function reposicionarInimigo(inimigo, escalaOriginalInimigo, velocidadeDeslocame
     // Velocidade aleatória, cruzando o campo de visão na diagonal oposta ao spawn
     inimigo.userData.velocidadeX = (inimigo.userData.origem ? -1 : 1) * (0.2 + Math.random() * 0.25);
 
-    // Altura aleatória aproveitando toda a área da mira (10 a 30)
-    inimigo.position.y = 10 + Math.random() * 30;
+    // Altura aleatória na nova área elevada (25 a 45)
+    inimigo.position.y = 25 + Math.random() * 20;
 
     // Alterna a origem do próximo inimigo
     inimigo.userData.origem = !inimigo.userData.origem;
@@ -259,7 +266,6 @@ export function atualizarInimigos(listaInimigos, camera, limiteXDinamico, escala
     }
 }
 
-// FUNÇÕES DE TIRO
 export function atirarPlayer(scene, aviao, mira, listaProjeteisPlayer) {
     // Criação do laser do player
     const geometriaTiro = new THREE.PlaneGeometry(1.5, 12.0); // Retângulo alongado
@@ -323,7 +329,7 @@ export function verificarDanoNoPlayer(scene, listaProjeteis, aviao, bbAviao, bbP
         if (bbProjetilAux.intersectsBox(bbAviao)) {
             if (statusJogo.invencivel) {
                 removerProjetilDaCena(scene, projetil, listaProjeteis, i);
-                continue; 
+                continue;
             }
             if (aviaoAtingido) {
                 aviaoAtingido.currentTime = 0; // Reinicia o audio
@@ -382,14 +388,14 @@ export function verificarDanoNosInimigos(scene, listaProjeteisPlayer, listaInimi
 export function criaHealthPack(scene, limiteXDinamico, listaItens, aviao, statusJogo, healthpack) {
     if (statusJogo.invencivel) return;
 
-    // Escolhe uma posição aleatória 
+    // Escolhe uma posição aleatória
     const randomX = (Math.random() - 0.5) * (limiteXDinamico * 2);
-    const randomY = 12 + Math.random() * 23;
+    const randomY = 25 + Math.random() * 20; // Ajustado para altura atual do avião
     const posicaoZ = aviao.position.z - 120;
 
     //Importa Health Pack
-    healthpack.scale.set(0.05, 0.05, 0.05); 
-    healthpack.position.set(randomX, randomY, posicaoZ); 
+    healthpack.scale.set(0.05, 0.05, 0.05);
+    healthpack.position.set(randomX, randomY, posicaoZ);
 
     healthpack.rotation.x = Math.PI/2; // coloca em pé
 

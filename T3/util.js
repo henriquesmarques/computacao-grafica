@@ -2,21 +2,18 @@ import * as THREE from 'three';
 import { setDefaultMaterial } from "../libs/util/util.js";
 
 /**
- * Cria o modelo 3D de uma árvore composta por um tronco cilíndrico e três níveis de folhas cônicas.
- * A altura da árvore sofre uma leve variação aleatória para gerar diversidade visual.
+ * Cria a malha hierárquica (Mesh) de uma árvore genérica.
+ * Estruturada com geometrias primitivas para otimizar o tempo de renderização em massa.
  *
- * @returns {THREE.Mesh} A malha (Mesh) contendo o tronco e as folhas agrupadas.
+ * @returns {THREE.Mesh} Grupo contendo o tronco base e as folhas.
  */
 export function criarArvore() {
-    // Materiais
     const materialVerde = setDefaultMaterial("green");
     const materialMarrom = setDefaultMaterial("brown");
 
-    // Tronco da árvore (Base)
     const cylinderGeometry = new THREE.CylinderGeometry(1.8, 2, 2, 16);
     const tronco = new THREE.Mesh(cylinderGeometry, materialMarrom);
 
-    // Topo da árvore (Camadas de folhas)
     const coneGeometry1 = new THREE.ConeGeometry(3, 4, 32);
     const coneGeometry2 = new THREE.ConeGeometry(4, 5, 32);
     const coneGeometry3 = new THREE.ConeGeometry(4.5, 5.5, 32);
@@ -25,20 +22,17 @@ export function criarArvore() {
     const cone2 = new THREE.Mesh(coneGeometry2, materialVerde);
     const cone3 = new THREE.Mesh(coneGeometry3, materialVerde);
 
-    // Otimização: desativa sombras internas nas folhas para melhorar performance
+    // Otimização de renderização: Sombras intra-modelo desativadas
     cone1.castShadow = false; cone1.receiveShadow = false;
     cone2.castShadow = false; cone2.receiveShadow = false;
     cone3.castShadow = false; cone3.receiveShadow = false;
 
-    // Dimensões para empilhamento correto
     const alturaCilindro = tronco.geometry.parameters.height;
     const alturaCone2 = coneGeometry2.parameters.height;
     const alturaCone3 = coneGeometry3.parameters.height;
 
-    // Posicionamento base
     tronco.position.set(0, alturaCilindro / 2, 0);
 
-    // Empilhamento dinâmico das folhas (de baixo para cima)
     const posY3 = alturaCilindro / 2 + alturaCone3 / 2;
     cone3.position.set(0, posY3, 0);
 
@@ -48,12 +42,12 @@ export function criarArvore() {
     const posY1 = posY2 + alturaCone2 / 2;
     cone1.position.set(0, posY1, 0);
 
-    // Agrupa as folhas como filhas do tronco
+    // Hierarquia de nós: vértices das folhas vinculados à matriz do tronco
     tronco.add(cone1);
     tronco.add(cone2);
     tronco.add(cone3);
 
-    // Aplica escala aleatória para variar a altura do conjunto final
+    // Variação de escala global do objeto instanciado
     const alturaAleatoria = 0.4 + Math.random() * 0.3;
     tronco.scale.set(alturaAleatoria, alturaAleatoria, alturaAleatoria);
     tronco.position.y = (alturaCilindro * alturaAleatoria) / 2;
@@ -62,29 +56,25 @@ export function criarArvore() {
 }
 
 /**
- * Cria o modelo 3D de um avião agrupando formas geométricas básicas.
+ * Constrói o modelo 3D do avião a partir de geometrias nativas do Three.js.
  *
- * @returns {Object} Um objeto contendo a referência do `corpo` (que agrupa o avião inteiro) e da `helice` (para animação).
+ * @returns {Object} Dicionário contendo a referência da malha principal (`corpo`) e do objeto animável (`helice`).
  */
 export function criarAviao() {
-    // Materiais
     const cor_1 = setDefaultMaterial("#BA5624");
     const cor_2 = setDefaultMaterial("#FCDE9C");
     const cor_3 = setDefaultMaterial("#FFA552");
 
-    // Corpo (Cilindro afilado em uma ponta)
     const geometriaCilindro = new THREE.CylinderGeometry(2, 1, 13);
     const corpo = new THREE.Mesh(geometriaCilindro, cor_1);
     corpo.rotation.x = Math.PI / 2;
 
-    // Asa frontal (Esfera achatada)
     const geometriaEsfera = new THREE.SphereGeometry();
     const asa = new THREE.Mesh(geometriaEsfera, cor_1);
     asa.scale.set(10, 0.5, 1.5);
     asa.rotation.x = -Math.PI / 2;
     corpo.add(asa);
 
-    // Cauda Horizontal (Esfera achatada)
     const geometriaCaudaHoriz = new THREE.SphereGeometry();
     const caudaHorizontal = new THREE.Mesh(geometriaCaudaHoriz, cor_3);
     caudaHorizontal.scale.set(3.5, 0.4, 1);
@@ -92,7 +82,6 @@ export function criarAviao() {
     caudaHorizontal.rotation.x = -Math.PI / 2;
     corpo.add(caudaHorizontal);
 
-    // Leme Vertical (Caixa alongada)
     const geometriaCaudaVert = new THREE.BoxGeometry(0.8, 0.8, 0.8);
     const caudaVertical = new THREE.Mesh(geometriaCaudaVert, cor_3);
     caudaVertical.scale.set(0.3, 2, 1.9);
@@ -100,7 +89,6 @@ export function criarAviao() {
     caudaVertical.rotation.x = -Math.PI / 8;
     corpo.add(caudaVertical);
 
-    // Cabine (Meia esfera esticada)
     const geometriaCabine = new THREE.SphereGeometry(0.8);
     const cabine = new THREE.Mesh(geometriaCabine, cor_2);
     cabine.scale.set(1.2, 1.2, 2.5);
@@ -108,7 +96,6 @@ export function criarAviao() {
     cabine.rotation.x = -Math.PI / 2;
     corpo.add(cabine);
 
-    // Hélice frontal (Caixa achatada)
     const geometriaHelice = new THREE.BoxGeometry(1, 1, 1);
     const helice = new THREE.Mesh(geometriaHelice, cor_3);
     helice.scale.set(5, 0.4, 0.1);
@@ -116,7 +103,6 @@ export function criarAviao() {
     helice.rotation.x = -Math.PI / 2;
     corpo.add(helice);
 
-    // Miolo central da hélice (Esfera)
     const geometriaMiolo = new THREE.SphereGeometry();
     const miolo = new THREE.Mesh(geometriaMiolo, cor_2);
     miolo.scale.set(0.6, 0.6, 0.6);
@@ -124,7 +110,6 @@ export function criarAviao() {
     miolo.rotation.x = -Math.PI / 2;
     corpo.add(miolo);
 
-    // Detalhe frontal do corpo do avião (Torus)
     const geometriaArco = new THREE.TorusGeometry(1.85, 0.14);
     const arco = new THREE.Mesh(geometriaArco, cor_3);
     arco.scale.set(1.1, 1.1, 0.01);
@@ -135,14 +120,6 @@ export function criarAviao() {
     return { corpo, helice };
 }
 
-/**
- * Instancia uma quantidade definida de árvores para posterior distribuição no cenário.
- *
- * @param {number} comprimentoPlano - Tamanho do plano no eixo Z (não utilizado na geração atual, mas útil para expansão).
- * @param {number} larguraPlano - Tamanho do plano no eixo X (não utilizado na geração atual).
- * @param {number} total - Quantidade de árvores a serem geradas.
- * @returns {THREE.Mesh[]} Vetor contendo as malhas (Meshes) das árvores instanciadas.
- */
 export function criarArvores(comprimentoPlano, larguraPlano, total) {
     const arvores = [];
     for (let i = 0; i < total; i++) {
@@ -153,23 +130,24 @@ export function criarArvores(comprimentoPlano, larguraPlano, total) {
 
 export function criarMira(color) {
     const verticesMira = [];
-    const tam = 2.5;       // Tamanho total da mira
-    const compLinha = 0.8; // Comprimento de cada perna do L
+    const tam = 2.5;
+    const compLinha = 0.8;
 
+    // Geração procedural das linhas via BufferGeometry
     verticesMira.push(
-        // Canto Superior Esquerdo
+        // Superior Esquerdo
         -tam, tam, 0,  -tam + compLinha, tam, 0,
         -tam, tam, 0,  -tam, tam - compLinha, 0,
 
-        // Canto Superior Direito
+        // Superior Direito
         tam, tam, 0,   tam - compLinha, tam, 0,
         tam, tam, 0,   tam, tam - compLinha, 0,
 
-        // Canto Inferior Esquerdo
+        // Inferior Esquerdo
         -tam, -tam, 0, -tam + compLinha, -tam, 0,
         -tam, -tam, 0, -tam, -tam + compLinha, 0,
 
-        // Canto Inferior Direito
+        // Inferior Direito
         tam, -tam, 0,  tam - compLinha, -tam, 0,
         tam, -tam, 0,  tam, -tam + compLinha, 0
     );
@@ -181,12 +159,6 @@ export function criarMira(color) {
     return new THREE.LineSegments(geometriaMira, materialMira);
 }
 
-/**
- * Configura e inicializa a câmera de perspectiva da cena.
- *
- * @param {THREE.Vector3} position - A posição inicial da câmera no espaço 3D.
- * @returns {THREE.PerspectiveCamera} A câmera configurada apontando para a origem (0,0,0).
- */
 export function iniciarCamera(position) {
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.copy(position);
@@ -194,55 +166,45 @@ export function iniciarCamera(position) {
     return camera;
 }
 
-// SISTEMA DE GERAÇÃO DE RUÍDO CONTÍNUO (FRACTAL VALUE NOISE / fBM)
+// --- ALGORITMOS DE RUÍDO (NOISE) PARA GERAÇÃO PROCEDURAL ---
 
 /**
- * Calcula a elevação final (eixo Y) do terreno para coordenadas específicas do mundo.
- * Aplica escalonamento e deslocamento (Offset) sobre o ruído fractal base.
+ * Transforma coordenadas 2D do espaço em um valor global de elevação (eixo Y).
  *
- * @param {number} coordenadaMundoX - Posição X absoluta no cenário.
- * @param {number} coordenadaMundoZ - Posição Z absoluta no cenário.
- * @returns {number} A altura final para o vértice do terreno na posição informada.
+ * @param {number} coordenadaMundoX - Posição absoluta X.
+ * @param {number} coordenadaMundoZ - Posição absoluta Z.
+ * @returns {number} Elevação calculada.
  */
 export function calcularAlturaTerreno(coordenadaMundoX, coordenadaMundoZ) {
     const ruido = gerarRuidoFractal(coordenadaMundoX, coordenadaMundoZ);
+    // Normalização e deslocamento do plano topográfico
     return -40 + ruido * 70;
 }
 
 /**
- * Fractional Brownian Motion (fBm) / Ruído Fractal: Agrega (soma) múltiplas camadas
- * (oitavas) de Value Noise para gerar terrenos complexos e naturais.
- *
- * @param {number} x - Coordenada X global
- * @param {number} y - Coordenada Y (Z) global
- * @param {number} [oitavas=4] - Quantidade de camadas de detalhe (quanto maior, mais detalhado e custoso)
- * @returns {number} O ruído acumulado e normalizado (0 a 1).
+ * Função de Ruído Fractal (Fractional Brownian Motion - fBm).
+ * Soma múltiplas "oitavas" de ruído para produzir relevos complexos e orgânicos.
  */
 function gerarRuidoFractal(x, y, oitavas = 3) {
     let valorAcumulado = 0;
     let amplitudeTotal = 1;
-    let frequenciaTotal = 0.015; // Define a escala macro das montanhas
+    let frequenciaTotal = 0.015; // Define a amplitude macro dos biomas
     let somaPesos = 0;
 
     for (let iteracao = 0; iteracao < oitavas; iteracao++) {
         valorAcumulado += gerarRuido2D(x * frequenciaTotal, y * frequenciaTotal) * amplitudeTotal;
         somaPesos += amplitudeTotal;
 
-        amplitudeTotal *= 0.5;  // Reduz o peso/altura dos micro-detalhes (Persistência)
-        frequenciaTotal *= 2.0; // Aumenta a quantidade de detalhes / imperfeições (Lacunaridade)
+        amplitudeTotal *= 0.5;  // Persistência: atenuação da amplitude nas oitavas superiores
+        frequenciaTotal *= 2.0; // Lacunaridade: compressão da frequência espacial
     }
 
-    // Normaliza para manter o limite de escala estrito
     return valorAcumulado / somaPesos;
 }
 
 /**
- * Value Noise 2D: Gera um ruído suave interpolando os valores "Hash" dos 4 cantos
- * de um grid virtual usando uma curva de suavização (Smoothstep).
- *
- * @param {number} x - Coordenada contínua X
- * @param {number} y - Coordenada contínua Y
- * @returns {number} Valor suavizado de ruído para as coordenadas dadas.
+ * Algoritmo Value Noise 2D.
+ * Interpola valores escalares ("Hash") extraídos de um grid estático para gerar transições suaves.
  */
 function gerarRuido2D(x, y) {
     const indiceX = Math.floor(x);
@@ -250,94 +212,174 @@ function gerarRuido2D(x, y) {
     const parteFracionariaX = x - indiceX;
     const parteFracionariaY = y - indiceY;
 
-    // Aplicação da curva matemática de suavização (Smoothstep: 3x^2 - 2x^3)
+    // Suavização polinomial (Smoothstep: 3x^2 - 2x^3) para evitar bordas aguçadas na geometria
     const curvaX = parteFracionariaX * parteFracionariaX * (3.0 - 2.0 * parteFracionariaX);
     const curvaY = parteFracionariaY * parteFracionariaY * (3.0 - 2.0 * parteFracionariaY);
 
-    // Obtém a "semente" pseudo-aleatória nos 4 cantos da célula do grid
     const baseInferiorEsquerda = gerarHash(indiceX, indiceY);
     const baseInferiorDireita = gerarHash(indiceX + 1, indiceY);
     const baseSuperiorEsquerda = gerarHash(indiceX, indiceY + 1);
     const baseSuperiorDireita = gerarHash(indiceX + 1, indiceY + 1);
 
-    // Mistura (Interpola) horizontalmente as bases inferiores e superiores
     const resultadoInferior = interpolacaoLinear(baseInferiorEsquerda, baseInferiorDireita, curvaX);
     const resultadoSuperior = interpolacaoLinear(baseSuperiorEsquerda, baseSuperiorDireita, curvaX);
 
-    // Interpola verticalmente para obter o valor final 2D
     return interpolacaoLinear(resultadoInferior, resultadoSuperior, curvaY);
 }
 
 /**
- * Função Hash: Gera um valor escalar pseudo-aleatório baseado em coordenadas 2D.
- * É determinística: para o mesmo (x, y), retorna sempre o mesmo valor.
- *
- * @param {number} x - Coordenada X
- * @param {number} y - Coordenada Y (ou Z no espaço 3D)
- * @returns {number} Um valor entre 0 e 1.
+ * Dispersão determinística estática. Para a mesma coordenada, o retorno é invariável.
  */
 function gerarHash(x, y) {
     let valor = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
     return valor - Math.floor(valor);
 }
 
-/**
- * Interpolação Linear (Lerp): Transita entre dois valores baseando-se num fator.
- *
- * @param {number} inicio - Valor inicial
- * @param {number} fim - Valor final
- * @param {number} fator - Porcentagem da transição (0 a 1)
- * @returns {number} O valor interpolado.
- */
 function interpolacaoLinear(inicio, fim, fator) {
     return inicio + fator * (fim - inicio);
 }
 
-// --- T3: Geração Procedural de Texturas ---
+// --- GERAÇÃO DINÂMICA DE MAPAS UV ---
+
 /**
- * Cria uma textura baseada em ruído diretamente pelo Canvas.
- * Soluciona a necessidade de "Procedural Texturing" sem necessitar de imagens externas.
+ * Cria a textura base (Albedo/Diffuse Map) em memória (HTML5 Canvas).
+ *
+ * @param {string} corHex - Cor dominante do bioma.
+ * @param {number} variacaoCor - Amplitude do desvio estocástico sobre o RGB.
+ * @param {number} tamanho - Resolução do Canvas alocado.
+ * @param {number} escalaDetalhe - Frequência do ruído em relação à área total.
  */
-export function criarTexturaProcedural(corHex, intensidadeRuido = 30) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-
-    // Pinta o fundo com a cor base especificada
-    ctx.fillStyle = corHex;
-    ctx.fillRect(0, 0, 256, 256);
-
-    // Manipula os pixels para gerar o ruído processual
-    const imgData = ctx.getImageData(0, 0, 256, 256);
-    const data = imgData.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-        const ruido = (Math.random() - 0.5) * intensidadeRuido;
-        data[i] = Math.max(0, Math.min(255, data[i] + ruido));     // R
-        data[i+1] = Math.max(0, Math.min(255, data[i+1] + ruido)); // G
-        data[i+2] = Math.max(0, Math.min(255, data[i+2] + ruido)); // B
+export function criarTexturaProcedural(corHex, variacaoCor = 0.15, tamanho = 256, escalaDetalhe = 64) {
+    const canvasRuido = document.createElement('canvas');
+    canvasRuido.width = escalaDetalhe;
+    canvasRuido.height = escalaDetalhe;
+    const ctxRuido = canvasRuido.getContext('2d');
+    const imgRuido = ctxRuido.createImageData(escalaDetalhe, escalaDetalhe);
+    for (let i = 0; i < imgRuido.data.length; i += 4) {
+        const val = Math.random() * 255;
+        imgRuido.data[i] = val; imgRuido.data[i+1] = val; imgRuido.data[i+2] = val; imgRuido.data[i+3] = 255;
     }
+    ctxRuido.putImageData(imgRuido, 0, 0);
 
-    ctx.putImageData(imgData, 0, 0);
+    const canvas = document.createElement('canvas');
+    canvas.width = tamanho;
+    canvas.height = tamanho;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(canvasRuido, 0, 0, tamanho, tamanho);
+    const dataRuido = ctx.getImageData(0, 0, tamanho, tamanho).data;
+
+    ctx.fillStyle = corHex;
+    ctx.fillRect(0, 0, tamanho, tamanho);
+    const baseColorData = ctx.getImageData(0, 0, tamanho, tamanho);
+    const dataFinal = baseColorData.data;
+
+    // Modulação RGB da base com dados extraídos do mapa de ruído expandido
+    for (let i = 0; i < dataFinal.length; i += 4) {
+        const varColor = (dataRuido[i] - 128) * variacaoCor;
+        dataFinal[i]   = Math.max(0, Math.min(255, dataFinal[i] + varColor));
+        dataFinal[i+1] = Math.max(0, Math.min(255, dataFinal[i+1] + varColor));
+        dataFinal[i+2] = Math.max(0, Math.min(255, dataFinal[i+2] + varColor));
+    }
+    ctx.putImageData(baseColorData, 0, 0);
+
     const textura = new THREE.CanvasTexture(canvas);
     textura.wrapS = THREE.RepeatWrapping;
     textura.wrapT = THREE.RepeatWrapping;
     return textura;
 }
 
-// --- T3: Shaders da Água ---
+/**
+ * Sintetiza o vetor normal da malha geométrica convertendo as elevações geradas via ruído.
+ * Transforma dados de elevação bidimensional em vetores cartesianos (RGB mapeia para XYZ).
+ */
+export function criarTexturaNormalProcedural(intensidade = 3.0, tamanho = 512, escalaDetalhe = 64) {
+    const canvasRuido = document.createElement('canvas');
+    canvasRuido.width = escalaDetalhe;
+    canvasRuido.height = escalaDetalhe;
+    const ctxRuido = canvasRuido.getContext('2d');
+    const imgRuido = ctxRuido.createImageData(escalaDetalhe, escalaDetalhe);
+
+    // Geração do mapa de alturas primitivo
+    for (let i = 0; i < imgRuido.data.length; i += 4) {
+        const val = Math.random() * 255;
+        imgRuido.data[i] = val; imgRuido.data[i+1] = val; imgRuido.data[i+2] = val; imgRuido.data[i+3] = 255;
+    }
+    ctxRuido.putImageData(imgRuido, 0, 0);
+
+    // Interpolação para criação dos declives contínuos
+    const canvas = document.createElement('canvas');
+    canvas.width = tamanho;
+    canvas.height = tamanho;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(canvasRuido, 0, 0, tamanho, tamanho);
+    const dataRuido = ctx.getImageData(0, 0, tamanho, tamanho).data;
+
+    const normalData = ctx.createImageData(tamanho, tamanho);
+
+    // Filtro derivado assemelhado a matriz de Sobel.
+    // Avalia o gradiente de altura dos vizinhos cardinais adjacentes.
+    for (let y = 0; y < tamanho; y++) {
+        for (let x = 0; x < tamanho; x++) {
+            const idx = (y * tamanho + x) * 4;
+
+            // Restrição de margens (Wrapping/Enrolamento) usando módulo
+            const xEsq = (x - 1 + tamanho) % tamanho;
+            const xDir = (x + 1) % tamanho;
+            const yCima = (y - 1 + tamanho) % tamanho;
+            const yBaixo = (y + 1) % tamanho;
+
+            const valEsq = dataRuido[(y * tamanho + xEsq) * 4];
+            const valDir = dataRuido[(y * tamanho + xDir) * 4];
+            const valCima = dataRuido[(yCima * tamanho + x) * 4];
+            const valBaixo = dataRuido[(yBaixo * tamanho + x) * 4];
+
+            // Coeficientes dos diferenciais
+            const dX = (valEsq - valDir) / 255.0 * intensidade;
+            const dY = (valCima - valBaixo) / 255.0 * intensidade;
+            const dZ = 1.0;
+
+            // Normalização do vetor perpendicular
+            const length = Math.sqrt(dX*dX + dY*dY + dZ*dZ);
+            const nX = dX / length;
+            const nY = dY / length;
+            const nZ = dZ / length;
+
+            // Mapeia de vetores [-1, 1] para espaço de cores numéricas [0, 255]
+            normalData.data[idx] = (nX * 0.5 + 0.5) * 255;
+            normalData.data[idx+1] = (nY * 0.5 + 0.5) * 255;
+            normalData.data[idx+2] = (nZ * 0.5 + 0.5) * 255;
+            normalData.data[idx+3] = 255;
+        }
+    }
+    ctx.putImageData(normalData, 0, 0);
+
+    const textura = new THREE.CanvasTexture(canvas);
+    textura.wrapS = THREE.RepeatWrapping;
+    textura.wrapT = THREE.RepeatWrapping;
+    return textura;
+}
+
+// --- SHADERS DO AMBIENTE ---
+
 export const shaderAguaVertex = `
 uniform float tempo;
 varying vec2 vUv;
 varying vec3 vWorldPosition;
 
 void main() {
-    vUv = uv * 10.0;
     vec3 pos = position;
-
+    
     vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
     vWorldPosition = worldPosition.xyz;
+    
+    // As coordenadas UV são derivadas do World Space (Espaço do Mundo) 
+    // para travar as texturas e reflexos no referencial cartesiano fixo
+    vUv = worldPosition.xz * 0.05; 
+    
     gl_Position = projectionMatrix * viewMatrix * worldPosition;
 }
 `;
@@ -352,19 +394,19 @@ varying vec2 vUv;
 varying vec3 vWorldPosition;
 
 void main() {
-    // Texturização procedural da água usando seno/cosseno para imitar refração e espuma leve
+    // Ruído contínuo baseado em tempo implementado através de composição matemática
     float onda1 = sin(vUv.x * 5.0 + tempo) * 0.5 + 0.5;
     float onda2 = cos(vUv.y * 5.0 - tempo * 0.8) * 0.5 + 0.5;
     float reflexo = onda1 * onda2;
 
-    // Mistura a cor base da água com um "brilho" simulando espuma
+    // Reflexividade interpolada via mistura da cor primária
     vec3 corFinal = mix(corAgua, vec3(0.9, 0.95, 1.0), reflexo * 0.3);
 
-    gl_FragColor = vec4(corFinal, 0.75); // Revertido para 75% de opacidade constante
+    gl_FragColor = vec4(corFinal, 0.75); 
 
-    // Aplicação da Névoa (Fog) com base na distância global da câmera
+    // Cálculo espacial de profundidade para atenuação do fragmento (Depth Fog)
     float dist = length(cameraPosition - vWorldPosition);
-    float fatorNevoa = clamp((dist - 10.0) / (distanciaNevoa - 10.0), 0.0, 1.0);
+    float fatorNevoa = clamp((dist - 80.0) / (distanciaNevoa - 80.0), 0.0, 1.0);
     gl_FragColor.rgb = mix(gl_FragColor.rgb, corNevoa, fatorNevoa);
 }
 `;
