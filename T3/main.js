@@ -627,31 +627,18 @@ function configurarJanela() {
             color:'#85ff8d',
             size:100
         });
-
-        manager.on('move', function(evt, data){
+        manager.on('move',function(evt,data){
             if(!data.vector) return;
-            
-            // Força máxima que a mira pode afastar-se do centro do avião
-            const limiteAfastamentoX = 25; 
-            const limiteAfastamentoY = 15;
-
-            // Define a posição da mira BASEADA na inclinação do analógico (data.vector)
-            // Em vez de somar infinitamente (+=), nós definimos diretamente (=) em relação ao centro
-            // O centro horizontal é 0, e a altura padrão do avião é 25
-            mira.position.x = data.vector.x * limiteAfastamentoX;
-            mira.position.y = 25 + (data.vector.y * limiteAfastamentoY); 
-            
-            // Mantém a mira sempre à mesma distância estável à frente do avião (Eixo Z)
-            mira.position.z = -65; 
-
-            mousePressionado = true; // Ativa o disparo automático enquanto move
+            const velocidade = 0.8;
+            mira.position.x += data.vector.x * velocidade;
+            mira.position.y += data.vector.y * velocidade;
+            // Prende a mira às bordas computadas anteriormente
+            mira.position.x = Math.max(-limiteXDinamico, Math.min(limiteXDinamico,mira.position.x));
+            mira.position.y = Math.max(35,Math.min(65,mira.position.y));
+            mousePressionado = true;
         });
-
-        manager.on('end', function(){
-            mousePressionado = false; // Para de atirar ao soltar
-            
-            // RECONDUZ A MIRA PARA A FRENTE DO AVIÃO AUTOMATICAMENTE AO SOLTAR O ANALÓGICO
-            mira.position.set(0, 25, -65);
+        manager.on('end',function(){
+            mousePressionado = false;
         });
     }
 }
