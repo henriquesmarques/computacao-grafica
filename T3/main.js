@@ -1,11 +1,3 @@
-/**
- * NOTA SOBRE O SHADER DE TERRENO E ÁGUA:
- * A lógica de texturização procedural baseada em ruído (Value Noise / fBm)
- * e a manipulação dos shaders via 'onBeforeCompile' presentes neste arquivo
- * e no 'util.js' foram desenvolvidas de forma personalizada com o auxílio
- * de Inteligência Artificial (Google Gemini).
- */
-
 import * as THREE from "three";
 import {initRenderer, onWindowResize} from "../libs/util/util.js";
 import Stats from '../build/jsm/libs/stats.module.js';
@@ -156,7 +148,7 @@ configurarJanela();
 
 // --- CONFIGURAÇÃO DO TERRENO ---
 const comprimentoTerreno = 300;
-const larguraTerreno = 650;
+const larguraTerreno = 450;
 const segmentosTerreno = 128; // Define a resolução da malha para deformação procedural
 const geometriaPlano = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerreno, segmentosTerreno, segmentosTerreno);
 
@@ -242,10 +234,22 @@ function carregarInimigos() {
 // Carrega o avião principal
 loader.load('T3/assets/aviao.gltf', function (gltf) {
     const modeloAviao = gltf.scene;
+
+    const textureLoader = new THREE.TextureLoader();
+    const aviaoTexture = textureLoader.load('T3/assets/texturaMilitar.jpg'); 
+    aviaoTexture.flipY = false; 
+
     modeloAviao.traverse(function (child) {
         if (child.isMesh) {
             child.castShadow = false; // Desabilitado para focar sombras no cenário
             child.receiveShadow = false;
+
+            child.material = new THREE.MeshStandardMaterial({
+                map: aviaoTexture,  
+                roughness: 0.4,            // Controla o brilho da fuselagem
+                metalness: 0.2             // Dá um leve aspecto metálico ao avião
+            });
+            child.material.needsUpdate = true;
         }
     });
     aviao = modeloAviao;
@@ -356,40 +360,18 @@ planoTerreno.receiveShadow = true;
 scene.add(planoTerreno);
 
 // --- PLANO DE ÁGUA ---
-// Criação da textura procedural para a água reforçada (aumentada variação de cor para 0.45)
-const texturaAgua = criarTexturaProcedural("#1ca3ec", 0.45);
-texturaAgua.wrapS = THREE.RepeatWrapping;
-texturaAgua.wrapT = THREE.RepeatWrapping;
-
 const aguaUniforms = {
     tempo: { value: 0.0 },
     corAgua: { value: new THREE.Color("#1ca3ec") },
     corNevoa: { value: new THREE.Color("rgb(175, 200, 220)") },
-    distanciaNevoa: { value: maxNevoa * (porcentagemNevoa / 100) },
-    tAgua: { value: texturaAgua } // Adicionado a textura procedural como uniform
+    distanciaNevoa: { value: maxNevoa * (porcentagemNevoa / 100) }
 };
 
 const geometriaAgua = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerreno, 64, 64);
-
-// Injeta a textura procedural no fragment shader nativo substituindo a cor sólida
-const fragmentShaderTexturizado = shaderAguaFragment
-    .replace(
-        'uniform float distanciaNevoa;',
-        'uniform float distanciaNevoa;\nuniform sampler2D tAgua;'
-    )
-    .replace(
-        'vec3 corFinal = mix(corAgua, vec3(0.9, 0.95, 1.0), reflexo * 0.3);',
-        `
-    // Amostra a textura procedural gerada com escala UV ajustada (de 15.0 para 8.0) para padrões maiores
-    vec4 corTextura = texture2D(tAgua, vUv * 8.0);
-    // Mistura a textura base reforçada com o reflexo animado das ondas (aumentado para 0.4)
-    vec3 corFinal = mix(corTextura.rgb, vec3(0.85, 0.95, 1.0), reflexo * 0.4);`
-    );
-
 const materialAgua = new THREE.ShaderMaterial({
     uniforms: aguaUniforms,
     vertexShader: shaderAguaVertex,
-    fragmentShader: fragmentShaderTexturizado, // Usando o shader texturizado
+    fragmentShader: shaderAguaFragment,
     transparent: true
 });
 
@@ -416,9 +398,6 @@ function renderizar() {
         atualizarAgua(malhaAgua, camera, comprimentoTerreno);
         reposicionarArvores(listaArvores, posicoesValidas, camera, comprimentoTerreno);
         atualizarInimigos(listaInimigos, camera, limiteXDinamico, escalaOriginalInimigo, velocidadeDeslocamento, aviao);
-
-        // Anima as ondas e reflexos da água dinamicamente
-        aguaUniforms.tempo.value += deltaTime;
 
         luzDirecional = gerenciarIluminacao(scene, camera, luzDirecional);
 
