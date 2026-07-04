@@ -139,7 +139,7 @@ configurarJanela();
 
 // --- CONFIGURAÇÃO DO TERRENO ---
 const comprimentoTerreno = 300;
-const larguraTerreno = 450;
+const larguraTerreno = 650;
 const segmentosTerreno = 128; // Define a resolução da malha para deformação procedural
 const geometriaPlano = new THREE.PlaneGeometry(larguraTerreno, comprimentoTerreno, segmentosTerreno, segmentosTerreno);
 
