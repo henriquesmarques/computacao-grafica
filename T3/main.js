@@ -42,30 +42,39 @@ import {
     atualizarAgua
 } from "./logicaJogo.js";
 
-// --- GERENCIADOR DE CARREGAMENTO ---
-// Monitora o download de todos os assets (modelos 3D e sons) antes de iniciar o jogo
+// Monitora o download de todos os assets antes de iniciar o jogo
 const loadingManager = new THREE.LoadingManager();
 
 loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
     if (!itemsTotal) return;
-    const porcentagem = Math.floor((itemsLoaded / itemsTotal) * 100);
+    
+    // Calcula a porcentagem da barra
+    const porcentagem = Math.round((itemsLoaded / itemsTotal) * 100);
+    const barraProgresso = document.getElementById("barra-progresso-loading");
+    if (barraProgresso) {
+        barraProgresso.style.width = porcentagem + "%";
+    }
 
-    // Atualiza a barra de progresso visual na interface HTML
-    const barraProgresso = document.getElementById('barra-progresso-loading');
-    const textoPorcentagem = document.getElementById('texto-porcentagem');
+    // EXTRAI APENAS O NOME DO ARQUIVO ATUAL 
+    const nomeArquivo = url.substring(url.lastIndexOf('/') + 1);
 
-    if (barraProgresso) barraProgresso.style.width = porcentagem + '%';
-    if (textoPorcentagem) textoPorcentagem.innerText = porcentagem + '%';
+    // ATUALIZA O TEXTO NA TELA
+    const textoArquivo = document.getElementById("arquivo-carregando");
+    if (textoArquivo) {
+        textoArquivo.innerText = `Carregando: ${nomeArquivo} (${itemsLoaded}/${itemsTotal})`;
+    }
 };
 
 loadingManager.onLoad = function () {
-    // Congela a simulação no fundo até o jogador clicar em Iniciar
-    pausarSimulacao();
-    const btnStart = document.getElementById('btn-start');
-
+    const textoArquivo = document.getElementById("arquivo-carregando");
+    if (textoArquivo) {
+        textoArquivo.innerText = "Todos os assets carregados com sucesso!";
+    }
+    
+    const btnStart = document.getElementById("btn-start");
     if (btnStart) {
         btnStart.disabled = false;
-        btnStart.classList.add('liberado'); // Ativa o visual brilhante indicando que o jogo está pronto
+        btnStart.classList.add("liberado"); // Ativa o visual brilhante indicando que o jogo está pronto
     }
 };
 
