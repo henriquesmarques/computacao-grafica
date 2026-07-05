@@ -7,10 +7,10 @@
  */
 
 import * as THREE from "three";
-import {initRenderer, onWindowResize} from "../libs/util/util.js";
-import Stats from '../build/jsm/libs/stats.module.js';
-import GUI from '../libs/util/dat.gui.module.js';
-import {GLTFLoader} from '../build/jsm/loaders/GLTFLoader.js';
+import {initRenderer, onWindowResize} from "../../libs/util/util.js";
+import Stats from '../../build/jsm/libs/stats.module.js';
+import GUI from '../../libs/util/dat.gui.module.js';
+import {GLTFLoader} from '../../build/jsm/loaders/GLTFLoader.js';
 import {
     criarAviao,
     criarArvores,

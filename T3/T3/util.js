@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { setDefaultMaterial } from "../libs/util/util.js";
+import { setDefaultMaterial } from "../../libs/util/util.js";
 
 /**
  * Cria a malha hierárquica (Mesh) de uma árvore genérica.
