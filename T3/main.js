@@ -410,6 +410,8 @@ malhaAgua.rotation.x = -Math.PI / 2;
 malhaAgua.position.y = -15.5; // Nível fixo abaixo da área de areia do terreno
 scene.add(malhaAgua);
 
+pausarSimulacao();
+
 // --- LOOP PRINCIPAL DO JOGO ---
 function renderizar() {
     requestAnimationFrame(renderizar);
